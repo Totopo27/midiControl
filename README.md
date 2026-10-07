@@ -99,18 +99,27 @@ npm test
 
 ### 3. Iniciar la estación
 
+#### Opción A: Modo Completo con Monitor Web (Recomendado para visualización e inspección)
 ```bash
 npm start
 ```
+Abre la interfaz gráfica en navegador (`http://localhost:3000`) con vistas MIDI, OSC, Dual y Mapping Matrix.
 
-La consola confirmará la apertura de la interfaz MIDI física detectada, el socket de telemetría y los enlaces web:
-- Dashboard de monitoreo: `http://localhost:3000`
-- Estudio de shortcuts y mapeo: `http://localhost:3000/midi_shortcut_studio.html`
-- Conexión WebSocket: `ws://localhost:8081`
+#### Opción B: Modo Headless Daemon (Zero GUI / Zero HTTP overhead)
+```bash
+npm run start:headless
+# O pasando argumentos personalizados:
+node headless.js --out "USB2.0-MIDI" --osc-port 57120
+```
+Corre únicamente en consola o segundo plano:
+- Auto-detecta y enlaza hardware USB/DIN físico.
+- Mantiene activo el **Virtual Loopback Proxy** para que DAWs (Ableton, Reaper) o software de visuales lo reconozcan como dispositivo MIDI virtual.
+- Despacha datagramas UDP OSC en paralelo.
+- Cuenta con **Hot-Plug Watchdog** que reintenta la reconexión automática si se desconecta un cable USB sin interrumpir el software emisor.
 
 ---
 
-## Resultados de las Compuertas Técnicas (Gates 1 al 8 + E2E)
+## Resultados de las Compuertas Técnicas (Gates 1 al 8 + E2E + Headless)
 
 | Compuerta | Módulo evaluado | Criterio de aceptación | Medición obtenida | Estado |
 | :--- | :--- | :--- | :--- | :--- |
@@ -123,6 +132,7 @@ La consola confirmará la apertura de la interfaz MIDI física detectada, el soc
 | **Gate 7** | Motor Shift & StateCache | Volcado completo de 64 pads en memoria; límite < 2.0 ms | Tiempo de volcado: 0.015 ms (14.6 µs) | **PASS** |
 | **Gate 8** | Virtual Loopback Proxy | Intermediación bidireccional DAW <-> Hardware sin colisión | Flujo bidireccional 100% íntegro; 0 notas pegadas | **PASS** |
 | **E2E** | Integración Teclados-Wilson | Flujo completo WebSocket iPad -> midiControl -> Hardware/OSC | Acordes EDO-53 procesados sin latencia | **PASS** |
+| **Headless** | Daemon & Hot-Plug Watchdog | Operación autónoma sin HTTP; auto-reconexión y pánico | Proxy activo, watchdog en ciclo y pánico limpio | **PASS** |
 
 ---
 
