@@ -10,7 +10,10 @@
     "test:phase1": "node test_fase1.js",
     "test:phase2": "node test_fase2.js",
     "test:phase3": "node test_fase3.js",
-    "test:phase4": "node test_fase4.js"
+    "test:phase4": "node test_fase4.js",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "keywords": [
     "midi",
@@ -25,5 +28,8 @@
   "dependencies": {
     "jzz": "^1.9.5",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.1"
   }
 }
