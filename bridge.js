@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * CLI Runner para la Estación Headless (Daemon de Conexiones Estables)
- * Ejecuta el motor sin GUI ni HTTP, manteniendo el puerto virtual y OSC activos.
+ * CLI Runner para la Estación Live Bridge (Motor Ligero de Conexiones Estables)
+ * Ejecuta el motor sin GUI ni HTTP, asegurando el puerto virtual y OSC para DAWs y sintes.
  */
 
-const HeadlessEngine = require('./src/headless');
+const LiveBridgeEngine = require('./src/bridge');
 
 async function main() {
     const args = process.argv.slice(2);
@@ -24,7 +24,8 @@ async function main() {
         if (args[i] === '--osc-host' && args[i + 1]) options.targetOscHost = args[++i];
         if (args[i] === '--help' || args[i] === '-h') {
             console.log(`
-Uso: node headless.js [opciones]
+Uso: node bridge.js [opciones]
+     npm run bridge
 
 Opciones:
   --in <nombre>        Nombre exacto o parcial del puerto MIDI IN físico
@@ -38,13 +39,13 @@ Opciones:
     }
 
     console.log('================================================================');
-    console.log('         MIDICONTROL HEADLESS DAEMON (ZERO-GUI ENGINE)          ');
+    console.log('         MIDICONTROL LIVE BRIDGE (TRANSPARENT ENGINE)           ');
     console.log('================================================================');
 
-    const engine = new HeadlessEngine(options);
+    const engine = new LiveBridgeEngine(options);
     const status = await engine.start();
 
-    console.log('\n[ESTADO INICIAL DEL MOTOR]:');
+    console.log('\n[ESTADO INICIAL DEL BRIDGE]:');
     console.log(`  - Salida Física activa: ${status.hardware.activeOutput || 'Ninguna (esperando conexión)'}`);
     console.log(`  - Entrada Física activa: ${status.hardware.activeInput || 'Ninguna (esperando conexión)'}`);
     console.log(`  - Proxy Virtual DAW:    ${status.virtualProxy.inPort} (Modo: ${status.virtualProxy.mode})`);
@@ -54,7 +55,7 @@ Opciones:
 
     // Manejo de señales de cierre
     const shutdown = async () => {
-        console.log('\n[CERRANDO] Deteniendo daemon y enviando All Notes Off...');
+        console.log('\n[CERRANDO] Deteniendo Live Bridge y enviando All Notes Off...');
         await engine.stop();
         process.exit(0);
     };

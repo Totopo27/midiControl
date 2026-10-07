@@ -1,17 +1,16 @@
 /**
- * Headless Live Engine (Daemon / CLI sin interfaz gráfica)
+ * Live Bridge Engine (Daemon de Conexiones Ultra-Estables)
  * 
- * Diseñado para entornos de producción y software externos (DAWs, SuperCollider, Max):
- * - Zero GUI / Zero HTTP overhead.
+ * Diseñado para producción musical y software de audio (DAWs, SuperCollider, Max):
+ * - Enlace transparente con Cero GUI y Cero HTTP overhead.
  * - Reconexión automática tolerante a fallos físicos (Hot-Plug Watchdog).
- * - Exposición de Virtual Proxy para DAWs ("midiControl Virtual IN/OUT").
- * - Bifurcación simultánea a hardware y red UDP OSC.
- * - Monitoreo determinista en consola mediante métricas compactas en una sola línea.
+ * - Exposición del puerto Virtual Proxy para DAWs ("midiControl Virtual IN/OUT").
+ * - Bifurcación en paralelo a hardware físico y red UDP OSC.
  */
 
 const StreamProcessor = require('./processor');
 
-class HeadlessEngine {
+class LiveBridgeEngine {
     constructor(options = {}) {
         this.options = {
             targetMidiIn: options.targetMidiIn || null,
@@ -85,9 +84,9 @@ class HeadlessEngine {
             try {
                 await this.processor.midiRouter.openOutput(outToOpen);
                 this.lastOutputName = outToOpen;
-                console.log(`[HEADLESS::HW] Puerto Salida abierto: "${outToOpen}"`);
+                console.log(`[LIVE-BRIDGE::HW] Puerto Salida abierto: "${outToOpen}"`);
             } catch (err) {
-                console.warn(`[HEADLESS::HW] Advertencia salida "${outToOpen}": ${err.message}`);
+                console.warn(`[LIVE-BRIDGE::HW] Advertencia salida "${outToOpen}": ${err.message}`);
             }
         }
 
@@ -102,9 +101,9 @@ class HeadlessEngine {
             try {
                 await this.processor.midiRouter.openInput(inToOpen);
                 this.lastInputName = inToOpen;
-                console.log(`[HEADLESS::HW] Puerto Entrada abierto: "${inToOpen}"`);
+                console.log(`[LIVE-BRIDGE::HW] Puerto Entrada abierto: "${inToOpen}"`);
             } catch (err) {
-                console.warn(`[HEADLESS::HW] Advertencia entrada "${inToOpen}": ${err.message}`);
+                console.warn(`[LIVE-BRIDGE::HW] Advertencia entrada "${inToOpen}": ${err.message}`);
             }
         }
     }
@@ -171,8 +170,8 @@ class HeadlessEngine {
             try { this.processor.close(); } catch (_) {}
         }
 
-        console.log('[HEADLESS] Motor apagado correctamente.');
+        console.log('[LIVE-BRIDGE] Motor apagado correctamente.');
     }
 }
 
-module.exports = HeadlessEngine;
+module.exports = LiveBridgeEngine;

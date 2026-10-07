@@ -1,26 +1,26 @@
 /**
- * Prueba de Compuertas: Modo Headless Daemon y Watchdog de Conexiones
+ * Prueba de Compuertas: Modo Live Bridge y Watchdog de Conexiones
  */
 
 const assert = require('assert');
-const HeadlessEngine = require('./src/headless');
+const LiveBridgeEngine = require('./src/bridge');
 
-async function testHeadless() {
+async function testLiveBridge() {
     console.log('================================================================');
-    console.log('    TEST COMPUERTA: HEADLESS DAEMON & AUTO-RECONNECT WATCHDOG   ');
+    console.log('    TEST COMPUERTA: LIVE BRIDGE & AUTO-RECONNECT WATCHDOG       ');
     console.log('================================================================\n');
 
-    const engine = new HeadlessEngine({
+    const engine = new LiveBridgeEngine({
         targetOscPort: 57125,
         pollIntervalMs: 500
     });
 
-    console.log('[TEST 1] Iniciando motor headless...');
+    console.log('[TEST 1] Iniciando Live Bridge...');
     const status = await engine.start();
 
-    assert.strictEqual(status.running, true, 'El motor debe reportar estado running=true');
+    assert.strictEqual(status.running, true, 'El bridge debe reportar estado running=true');
     assert.ok(status.virtualProxy, 'El proxy virtual debe estar activo');
-    console.log('  -> Motor iniciado correctamente:', status.virtualProxy.inPort);
+    console.log('  -> Bridge iniciado correctamente:', status.virtualProxy.inPort);
 
     console.log('[TEST 2] Verificando watchdog de reconexión...');
     assert.strictEqual(typeof engine.reconnectTimer, 'object', 'El watchdog timer debe estar corriendo');
@@ -30,18 +30,18 @@ async function testHeadless() {
     await engine.panic();
     console.log('  -> Pánico ejecutado limpiamente sin excepciones.');
 
-    console.log('[TEST 4] Deteniendo motor headless...');
+    console.log('[TEST 4] Deteniendo Live Bridge...');
     await engine.stop();
-    assert.strictEqual(engine.isRunning, false, 'El motor debe estar apagado');
-    console.log('  -> Motor detenido correctamente.');
+    assert.strictEqual(engine.isRunning, false, 'El bridge debe estar apagado');
+    console.log('  -> Bridge detenido correctamente.');
 
     console.log('\n================================================================');
-    console.log('>> TEST HEADLESS: APROBADO (PASS)');
+    console.log('>> TEST LIVE BRIDGE: APROBADO (PASS)');
     console.log('================================================================');
     process.exit(0);
 }
 
-testHeadless().catch((err) => {
-    console.error('Fallo en test headless:', err);
+testLiveBridge().catch((err) => {
+    console.error('Fallo en test live bridge:', err);
     process.exit(1);
 });
