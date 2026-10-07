@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDI & OSC Sentinel Live Monitor</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card-bg: #161b22;
+            --text: #c9d1d9;
+            --accent: #58a6ff;
+            --note-on: #3fb950;
+            --note-off: #8b949e;
+            --panic: #f85149;
+            --border: #30363d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.4rem;
+            color: #f0f6fc;
+        }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px 16px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--note-off);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: var(--accent);
+            margin-top: 4px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            border-color: var(--accent);
+            color: #f0f6fc;
+        }
+
+        button.btn-panic {
+            background-color: var(--panic);
+            border-color: var(--panic);
+            color: white;
+        }
+
+        button.btn-panic:hover {
+            background-color: #da3633;
+        }
+
+        .table-container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: #21262d;
+            padding: 10px 14px;
+            color: #8b949e;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+        }
+
+        td {
+            padding: 8px 14px;
+            border-bottom: 1px solid #21262d;
+            font-family: monospace;
+        }
+
+        .badge-on {
+            color: var(--note-on);
+            font-weight: bold;
+        }
+
+        .badge-off {
+            color: var(--note-off);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div>
+            <h1>MIDI & OSC Sentinel Live Monitor</h1>
+            <span style="font-size: 0.85rem; color: #8b949e;">Supervisión de tráfico en tiempo real y seguridad para directos</span>
+        </div>
+        <div>
+            <button class="btn-panic" onclick="triggerPanic()">PANIC (ALL NOTES OFF)</button>
+        </div>
+    </header>
+
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-label">Total Eventos</div>
+            <div class="stat-value" id="stat-total">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Note-On / Note-Off</div>
+            <div class="stat-value" id="stat-notes">0 / 0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Latencia de Despacho</div>
+            <div class="stat-value" id="stat-latency">0.0 µs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Estado de Red</div>
+            <div class="stat-value" style="color: #3fb950;" id="stat-ws">Conectando...</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="clearLog()">Limpiar Log</button>
+        <button id="btn-pause" onclick="togglePause()">Pausar Scroll</button>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>#ID</th>
+                    <th>Hora</th>
+                    <th>Tipo</th>
+                    <th>Canal</th>
+                    <th>Nota</th>
+                    <th>Velocidad</th>
+                    <th>Latencia</th>
+                </tr>
+            </thead>
+            <tbody id="log-body">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let ws;
+        let totalCount = 0;
+        let noteOnCount = 0;
+        let noteOffCount = 0;
+        let isPaused = false;
+        const maxRows = 50;
+
+        function connectWS() {
+            const host = window.location.hostname || 'localhost';
+            ws = new WebSocket(`ws://${host}:8081`);
+
+            ws.onopen = () => {
+                document.getElementById('stat-ws').textContent = 'CONECTADO';
+                document.getElementById('stat-ws').style.color = '#3fb950';
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'telemetry') {
+                        handleTelemetry(msg.data);
+                    }
+                } catch(e) {}
+            };
+
+            ws.onclose = () => {
+                document.getElementById('stat-ws').textContent = 'DESCONECTADO';
+                document.getElementById('stat-ws').style.color = '#f85149';
+                setTimeout(connectWS, 2000);
+            };
+        }
+
+        function handleTelemetry(data) {
+            totalCount++;
+            if (data.event === 'noteon') noteOnCount++;
+            if (data.event === 'noteoff') noteOffCount++;
+
+            document.getElementById('stat-total').textContent = totalCount;
+            document.getElementById('stat-notes').textContent = `${noteOnCount} / ${noteOffCount}`;
+            document.getElementById('stat-latency').textContent = data.durationUs ? `${data.durationUs.toFixed(1)} µs` : 'N/A';
+
+            if (isPaused) return;
+
+            const tbody = document.getElementById('log-body');
+            const row = document.createElement('tr');
+            const isNoteOn = data.event === 'noteon';
+            const badgeClass = isNoteOn ? 'badge-on' : 'badge-off';
+
+            row.innerHTML = `
+                <td>${totalCount}</td>
+                <td>${new Date(data.timestamp).toISOString().split('T')[1].replace('Z','')}</td>
+                <td class="${badgeClass}">${data.event.toUpperCase()}</td>
+                <td>${data.channel}</td>
+                <td>${data.note}</td>
+                <td>${data.velocity}</td>
+                <td>${data.durationUs ? data.durationUs.toFixed(1) + ' µs' : '-'}</td>
+            `;
+
+            tbody.insertBefore(row, tbody.firstChild);
+
+            if (tbody.children.length > maxRows) {
+                tbody.removeChild(tbody.lastChild);
+            }
+        }
+
+        function triggerPanic() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'panic' }));
+                console.warn('¡PANIC ENVIADO!');
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log-body').innerHTML = '';
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            document.getElementById('btn-pause').textContent = isPaused ? 'Reanudar Scroll' : 'Pausar Scroll';
+        }
+
+        connectWS();
+    </script>
+</body>
+</html>
