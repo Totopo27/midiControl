@@ -1,17 +1,29 @@
 {
   "name": "midicontrol",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Universal MIDI & OSC Live Sentinel Bridge",
+  "main": "src/app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node start.js",
+    "test": "node test_fase1.js && node test_fase2.js && node test_fase3.js && node test_fase4.js",
+    "test:phase0": "node diagnostico_fase0.js",
+    "test:phase1": "node test_fase1.js",
+    "test:phase2": "node test_fase2.js",
+    "test:phase3": "node test_fase3.js",
+    "test:phase4": "node test_fase4.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "midi",
+    "osc",
+    "eurorack",
+    "supercollider",
+    "bridge",
+    "live"
+  ],
+  "author": "Architect",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "jzz": "^1.9.6",
-    "ws": "^8.22.0"
+    "jzz": "^1.9.5",
+    "ws": "^8.18.0"
   }
 }
