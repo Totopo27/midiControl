@@ -1,130 +1,183 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIDI & OSC Sentinel — Stage Control Console</title>
+    <title>MIDI & OSC Control Console</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ==========================================================================
+           COLOR SYSTEM & TOKENS (Inspirado en The Lobby Overwatch + Live Mission Control)
+           ========================================================================== */
         :root {
-            --bg-deep: #07090e;
-            --bg-surface: #0e121a;
-            --bg-panel: #141923;
-            --bg-panel-hover: #1a202c;
+            /* MODO OSCURO (Default - Tactical Deep Carbon) */
+            --bg-canvas: #090d16;
+            --bg-surface: #0f1420;
+            --bg-panel: #141b2b;
+            --bg-panel-hover: #1c253b;
+            --bg-table-header: #121826;
+            --bg-table-zebra: rgba(255, 255, 255, 0.015);
             
-            --border-subtle: rgba(255, 255, 255, 0.07);
-            --border-focus: rgba(255, 255, 255, 0.18);
-            
-            --text-main: #f0f4fc;
-            --text-muted: #748094;
-            --text-dim: #444d5d;
-            
+            --border-hairline: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(6, 182, 212, 0.45);
+            --border-hover: rgba(255, 255, 255, 0.16);
+
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --text-dim: #475569;
+
+            --accent-cyan: #06b6d4;
+            --accent-cyan-glow: rgba(6, 182, 212, 0.25);
+            --accent-violet: #a855f7;
+            --accent-violet-glow: rgba(168, 85, 247, 0.25);
+
             --led-green: #10b981;
             --led-green-glow: rgba(16, 185, 129, 0.35);
             --led-amber: #f59e0b;
-            --led-amber-glow: rgba(245, 158, 11, 0.35);
             --led-red: #ef4444;
-            --led-red-glow: rgba(239, 68, 68, 0.35);
-            --led-blue: #38bdf8;
-            --led-blue-glow: rgba(56, 189, 248, 0.3);
 
-            --accent-cyan: #06b6d4;
-            --panic-red: #dc2626;
-            --panic-hover: #ef4444;
+            --panic-red-bg: linear-gradient(180deg, #dc2626, #b91c1c);
+            --panic-red-border: #ef4444;
+            --panic-red-hover: linear-gradient(180deg, #ef4444, #dc2626);
+            --panic-shadow: rgba(220, 38, 38, 0.35);
+
+            --grid-line: rgba(255, 255, 255, 0.018);
+            --shadow-panel: 0 8px 24px rgba(0, 0, 0, 0.45);
+        }
+
+        /* MODO CLARO (Daylight Lab / High Precision Slate) */
+        [data-theme="light"] {
+            --bg-canvas: #f1f5f9;
+            --bg-surface: #ffffff;
+            --bg-panel: #f8fafc;
+            --bg-panel-hover: #edf2f7;
+            --bg-table-header: #e2e8f0;
+            --bg-table-zebra: rgba(0, 0, 0, 0.02);
+
+            --border-hairline: #cbd5e1;
+            --border-focus: #0284c7;
+            --border-hover: #94a3b8;
+
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --text-dim: #94a3b8;
+
+            --accent-cyan: #0284c7;
+            --accent-cyan-glow: rgba(2, 132, 199, 0.2);
+            --accent-violet: #7c3aed;
+            --accent-violet-glow: rgba(124, 58, 237, 0.2);
+
+            --led-green: #059669;
+            --led-green-glow: rgba(5, 150, 105, 0.3);
+            --led-amber: #d97706;
+            --led-red: #dc2626;
+
+            --panic-red-bg: linear-gradient(180deg, #dc2626, #b91c1c);
+            --panic-red-border: #b91c1c;
+            --panic-red-hover: linear-gradient(180deg, #b91c1c, #991b1b);
+            --panic-shadow: rgba(220, 38, 38, 0.25);
+
+            --grid-line: rgba(0, 0, 0, 0.035);
+            --shadow-panel: 0 4px 16px rgba(15, 23, 42, 0.08);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            transition: background-color 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, color 0.18s ease;
         }
 
         body {
-            background-color: var(--bg-deep);
-            color: var(--text-main);
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             min-height: 100vh;
             padding: 24px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
             background-image: 
-                radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.04) 0%, transparent 60%),
-                linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-            background-size: 100% 100%, 32px 32px, 32px 32px;
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 28px 28px, 28px 28px;
         }
 
-        /* --- HEADER & RACK BRANDING --- */
+        /* --- STAGE HEADER & MISSION CONTROLS --- */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            padding: 16px 24px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-hairline);
+            border-radius: 8px;
+            padding: 14px 20px;
+            box-shadow: var(--shadow-panel);
         }
 
         .brand-block {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
         }
 
-        .rack-badge {
-            background: linear-gradient(135deg, #1f2937, #111827);
-            border: 1px solid var(--border-subtle);
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-family: 'Geist Mono', monospace;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--accent-cyan);
-            letter-spacing: 1px;
+        .console-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', 'Geist Mono', monospace;
             text-transform: uppercase;
         }
 
-        .title-group h1 {
-            font-size: 1.15rem;
-            font-weight: 700;
-            letter-spacing: -0.3px;
-            color: var(--text-main);
-        }
-
-        .title-group p {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 2px;
-            font-family: 'Geist Mono', monospace;
-        }
-
-        .system-status {
+        .header-actions {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
+        }
+
+        .theme-switch-btn {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-hairline);
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            letter-spacing: 0.08em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .theme-switch-btn:hover {
+            border-color: var(--border-hover);
+            color: var(--text-primary);
         }
 
         .pilot-lamp {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.8rem;
-            font-family: 'Geist Mono', monospace;
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
             font-weight: 600;
-            color: var(--text-muted);
-            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-secondary);
+            background: var(--bg-panel);
             padding: 6px 14px;
-            border-radius: 20px;
-            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            border: 1px solid var(--border-hairline);
         }
 
         .led-dot {
-            width: 9px;
-            height: 9px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             background-color: var(--led-green);
             box-shadow: 0 0 10px var(--led-green-glow);
@@ -132,37 +185,103 @@
         }
 
         @keyframes pulse-glow {
-            0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 4px var(--led-green)); }
-            50% { opacity: 1; filter: drop-shadow(0 0 8px var(--led-green)); }
+            0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 3px var(--led-green)); }
+            50% { opacity: 1; filter: drop-shadow(0 0 6px var(--led-green)); }
+        }
+
+        /* --- ROUTING & DEVICE SELECTORS DECK --- */
+        .routing-deck {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-hairline);
+            border-radius: 8px;
+            padding: 14px 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr auto auto;
+            gap: 16px;
+            align-items: center;
+            box-shadow: var(--shadow-panel);
+        }
+
+        .select-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .select-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .select-custom {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-hairline);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .select-custom:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .mode-toggle-group {
+            display: flex;
+            gap: 6px;
+            align-items: flex-end;
+        }
+
+        .btn-toggle {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-hairline);
+            color: var(--text-muted);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.06em;
+        }
+
+        .btn-toggle:hover {
+            border-color: var(--border-hover);
+            color: var(--text-secondary);
+        }
+
+        .btn-toggle.active {
+            background: rgba(6, 182, 212, 0.12);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            box-shadow: 0 0 10px var(--accent-cyan-glow);
         }
 
         /* --- DASHBOARD TELEMETRY METERS --- */
         .telemetry-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
+            gap: 14px;
         }
 
         .meter-card {
             background: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            padding: 16px 20px;
+            border: 1px solid var(--border-hairline);
+            border-radius: 8px;
+            padding: 14px 18px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             position: relative;
             overflow: hidden;
-        }
-
-        .meter-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--border-focus), transparent);
+            box-shadow: var(--shadow-panel);
         }
 
         .meter-header {
@@ -172,26 +291,21 @@
         }
 
         .meter-title {
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.08em;
             color: var(--text-muted);
-            font-family: 'Geist Mono', monospace;
-        }
-
-        .meter-icon {
-            font-size: 0.85rem;
-            color: var(--text-dim);
+            font-family: 'JetBrains Mono', monospace;
         }
 
         .meter-value {
-            font-family: 'Geist Mono', monospace;
-            font-size: 2.1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
             font-weight: 700;
-            color: var(--text-main);
-            letter-spacing: -1px;
-            margin: 10px 0 4px 0;
+            color: var(--text-primary);
+            letter-spacing: -0.03em;
+            margin: 8px 0 4px 0;
             font-variant-numeric: tabular-nums;
         }
 
@@ -203,28 +317,29 @@
         }
 
         .meter-subtext {
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             color: var(--text-dim);
-            font-family: 'Geist Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
         }
 
-        /* --- MIDI CHANNEL MATRIX (LED BUS) --- */
+        /* --- 16-CHANNEL MIDI LED BUS --- */
         .channel-bus-panel {
             background: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            padding: 14px 20px;
+            border: 1px solid var(--border-hairline);
+            border-radius: 8px;
+            padding: 12px 18px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 16px;
+            box-shadow: var(--shadow-panel);
         }
 
         .bus-label {
-            font-family: 'Geist Mono', monospace;
-            font-size: 0.72rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.08em;
             color: var(--text-muted);
             font-weight: 600;
             white-space: nowrap;
@@ -233,31 +348,30 @@
         .channels-grid {
             display: grid;
             grid-template-columns: repeat(16, 1fr);
-            gap: 8px;
+            gap: 6px;
             width: 100%;
         }
 
         .ch-box {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--border-subtle);
-            border-radius: 5px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-hairline);
+            border-radius: 4px;
             padding: 6px 0;
             text-align: center;
-            font-family: 'Geist Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 0.7rem;
             color: var(--text-dim);
             font-weight: 600;
-            transition: all 0.15s ease-out;
         }
 
         .ch-box.active {
-            background: rgba(6, 182, 212, 0.15);
+            background: rgba(6, 182, 212, 0.16);
             border-color: var(--accent-cyan);
             color: var(--accent-cyan);
-            box-shadow: 0 0 10px rgba(6, 182, 212, 0.25);
+            box-shadow: 0 0 8px var(--accent-cyan-glow);
         }
 
-        /* --- STAGE ACTIONS TOOLBAR --- */
+        /* --- TOOLBAR & EMERGENCY ACTIONS --- */
         .controls-toolbar {
             display: flex;
             justify-content: space-between;
@@ -267,53 +381,48 @@
 
         .action-group {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
 
         .btn {
             background: var(--bg-panel);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-main);
-            padding: 9px 16px;
-            border-radius: 7px;
-            font-family: 'Geist Mono', monospace;
-            font-size: 0.8rem;
+            border: 1px solid var(--border-hairline);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
             font-weight: 600;
             cursor: pointer;
+            letter-spacing: 0.04em;
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            transition: all 0.15s ease;
         }
 
         .btn:hover {
             background: var(--bg-panel-hover);
-            border-color: var(--border-focus);
-            color: #ffffff;
+            border-color: var(--border-hover);
+            color: var(--text-primary);
         }
 
         .btn-panic {
-            background: linear-gradient(180deg, #dc2626, #b91c1c);
-            border: 1px solid #ef4444;
-            color: white;
+            background: var(--panic-red-bg);
+            border: 1px solid var(--panic-red-border);
+            color: #ffffff !important;
             font-weight: 700;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+            letter-spacing: 0.08em;
+            box-shadow: 0 4px 14px var(--panic-shadow);
         }
 
         .btn-panic:hover {
-            background: linear-gradient(180deg, #ef4444, #dc2626);
-            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+            background: var(--panic-red-hover);
             transform: translateY(-1px);
         }
 
-        .btn-panic:active {
-            transform: translateY(1px);
-        }
-
         .indicator-stream {
-            font-family: 'Geist Mono', monospace;
-            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
             color: var(--text-dim);
             display: flex;
             align-items: center;
@@ -328,34 +437,78 @@
             box-shadow: 0 0 6px var(--accent-cyan);
         }
 
-        /* --- REAL-TIME EVENT STREAM TABLE --- */
+        /* --- MONITOR VIEW TABS --- */
+        .view-tabs-bar {
+            display: flex;
+            gap: 6px;
+            border-bottom: 1px solid var(--border-hairline);
+            padding-bottom: 6px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.06em;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-panel);
+        }
+
+        .tab-btn.active {
+            background: var(--bg-surface);
+            border-color: var(--border-hairline);
+            color: var(--accent-cyan);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        /* --- MONITORS WORKSPACE & DATA TABLES --- */
+        .monitors-workspace {
+            display: flex;
+            gap: 14px;
+            flex: 1;
+            min-height: 440px;
+        }
+
         .stream-container {
             background: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
+            border: 1px solid var(--border-hairline);
+            border-radius: 8px;
             display: flex;
             flex-direction: column;
             flex: 1;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            box-shadow: var(--shadow-panel);
+        }
+
+        .stream-container.hidden {
+            display: none !important;
         }
 
         .stream-header {
-            padding: 12px 20px;
-            border-bottom: 1px solid var(--border-subtle);
-            background: rgba(0, 0, 0, 0.2);
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border-hairline);
+            background: var(--bg-table-header);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .stream-header-title {
-            font-family: 'Geist Mono', monospace;
-            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
             font-weight: 600;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.08em;
         }
 
         .table-viewport {
@@ -367,99 +520,52 @@
             width: 100%;
             border-collapse: collapse;
             text-align: left;
-            font-family: 'Geist Mono', monospace;
-            font-size: 0.82rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
         }
 
         th {
-            background: var(--bg-panel);
+            background: var(--bg-table-header);
             color: var(--text-muted);
-            padding: 10px 18px;
+            padding: 8px 14px;
             font-weight: 600;
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            border-bottom: 1px solid var(--border-subtle);
+            letter-spacing: 0.08em;
+            border-bottom: 1px solid var(--border-hairline);
             position: sticky;
             top: 0;
             z-index: 10;
         }
 
         td {
-            padding: 9px 18px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            color: var(--text-main);
+            padding: 8px 14px;
+            border-bottom: 1px solid var(--border-hairline);
+            color: var(--text-primary);
             font-variant-numeric: tabular-nums;
         }
 
         tr:nth-child(even) {
-            background: rgba(255, 255, 255, 0.01);
+            background: var(--bg-table-zebra);
         }
 
         tr.row-flash {
-            background: rgba(6, 182, 212, 0.12) !important;
-            animation: decay 0.4s ease-out forwards;
+            background: rgba(6, 182, 212, 0.14) !important;
+            animation: decay 0.35s ease-out forwards;
         }
 
         @keyframes decay {
-            from { background: rgba(6, 182, 212, 0.2); }
+            from { background: rgba(6, 182, 212, 0.22); }
             to { background: transparent; }
         }
 
-        .badge-type {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-weight: 700;
-            font-size: 0.7rem;
-            letter-spacing: 0.5px;
-        }
-
-        .badge-noteon {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(52, 211, 153, 0.3);
-        }
-
-        .badge-noteoff {
-            background: rgba(116, 128, 148, 0.12);
-            color: #94a3b8;
-            border: 1px solid rgba(148, 163, 184, 0.2);
-        }
-
-        .latency-pill {
-            font-weight: 600;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
-        .latency-fast {
-            color: var(--led-green);
-        }
-
-        .latency-mid {
-            color: var(--led-amber);
-        }
-
-        .latency-high {
-            color: var(--led-red);
-        }
-
-        /* --- FOOTER AT-A-GLANCE --- */
-        footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-family: 'Geist Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--text-dim);
-            padding: 6px 8px;
-        }
-
-        /* --- RESPONSIVE DESIGN --- */
+        /* --- RESPONSIVE DECK --- */
         @media (max-width: 900px) {
             .telemetry-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            .routing-deck {
+                grid-template-columns: 1fr;
             }
             .channel-bus-panel {
                 flex-direction: column;
@@ -468,26 +574,59 @@
             .channels-grid {
                 grid-template-columns: repeat(8, 1fr);
             }
+            .monitors-workspace {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- STAGE RACK HEADER -->
+    <!-- STAGE HEADER -->
     <header>
         <div class="brand-block">
-            <div class="rack-badge">RACK 01</div>
-            <div class="title-group">
-                <h1>MIDI & OSC CONSOLE</h1>
-            </div>
+            <h1 class="console-title">MIDI &amp; OSC CONSOLE</h1>
         </div>
-        <div class="system-status">
+        <div class="header-actions">
+            <button class="theme-switch-btn" id="btn-theme-toggle" title="Alternar entre modo oscuro y modo claro">
+                <span id="theme-icon">[◐]</span>
+                <span id="theme-label">TEMA: OSCURO</span>
+            </button>
             <div class="pilot-lamp" id="socket-lamp">
                 <span class="led-dot" id="socket-led"></span>
-                <span id="socket-status">CONECTADO</span>
+                <span id="socket-status">[ ENLAZADO ]</span>
             </div>
         </div>
     </header>
+
+    <!-- DEVICE & ROUTING DECK -->
+    <section class="routing-deck">
+        <div class="select-group">
+            <label class="select-label" for="select-midi-in">DISPOSITIVO DE ENTRADA (MIDI IN):</label>
+            <select class="select-custom" id="select-midi-in">
+                <option value="none">-- Sin entrada seleccionada --</option>
+            </select>
+        </div>
+
+        <div class="select-group">
+            <label class="select-label" for="select-midi-out">DISPOSITIVO DE SALIDA (MIDI OUT):</label>
+            <select class="select-custom" id="select-midi-out">
+                <option value="none">-- Sin salida seleccionada --</option>
+            </select>
+        </div>
+
+        <div class="select-group">
+            <label class="select-label">MODO DE DISPATCH:</label>
+            <div class="mode-toggle-group">
+                <button class="btn-toggle active" id="toggle-midi">MIDI</button>
+                <button class="btn-toggle active" id="toggle-osc">OSC</button>
+            </div>
+        </div>
+
+        <div class="select-group" style="align-self: flex-end;">
+            <button class="btn" id="btn-refresh-devices" title="Volver a escanear puertos USB y MIDI">REFRESCAR PUERTOS</button>
+        </div>
+    </section>
 
     <!-- METERS TELEMETRY DECK -->
     <section class="telemetry-grid">
@@ -550,35 +689,95 @@
         </div>
     </section>
 
-    <!-- EVENT INSPECTION STREAM -->
-    <main class="stream-container">
-        <div class="stream-header">
-            <span class="stream-header-title">INSPECCIÓN DE MENSAJES EN DIRECTO</span>
-            <span style="font-family: 'Geist Mono', monospace; font-size: 0.72rem; color: var(--text-dim);" id="feed-counter">0 ENTRADAS</span>
-        </div>
-        <div class="table-viewport">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 70px;">#ID</th>
-                        <th style="width: 110px;">TIEMPO</th>
-                        <th style="width: 110px;">EVENTO</th>
-                        <th style="width: 70px;">CH</th>
-                        <th style="width: 90px;">NOTA</th>
-                        <th style="width: 80px;">VEL</th>
-                        <th style="width: 130px;">LATENCIA</th>
-                        <th>DESTINO</th>
-                    </tr>
-                </thead>
-                <tbody id="events-tbody">
-                    <!-- Filas renderizadas en tiempo real -->
-                </tbody>
-            </table>
-        </div>
+    <!-- MONITOR VIEW TABS -->
+    <nav class="view-tabs-bar">
+        <button class="tab-btn active" id="tab-midi">MIDI MONITOR</button>
+        <button class="tab-btn" id="tab-osc">OSC MONITOR</button>
+        <button class="tab-btn" id="tab-dual">VISTA DUAL (MIDI + OSC)</button>
+    </nav>
+
+    <!-- MONITORS WORKSPACE -->
+    <main class="monitors-workspace">
+        <!-- MIDI MONITOR PANEL -->
+        <section class="stream-container" id="panel-midi">
+            <div class="stream-header">
+                <span class="stream-header-title">MIDI EVENT STREAM (HARDWARE / PROTOCOLO)</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-dim);" id="feed-counter">0 ENTRADAS</span>
+            </div>
+            <div class="table-viewport">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">TIEMPO</th>
+                            <th style="width: 50px;">DIR</th>
+                            <th style="width: 200px;">MENSAJE</th>
+                            <th style="width: 50px;">CH</th>
+                            <th style="width: 70px;">VALOR</th>
+                            <th style="width: 80px;">HEX</th>
+                            <th>ORIGEN / PUERTO</th>
+                        </tr>
+                    </thead>
+                    <tbody id="events-tbody">
+                        <!-- Filas MIDI -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- OSC MONITOR PANEL -->
+        <section class="stream-container hidden" id="panel-osc">
+            <div class="stream-header">
+                <span class="stream-header-title">OSC NETWORK STREAM (PAQUETES UDP)</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-dim);" id="osc-counter">0 PAQUETES</span>
+            </div>
+            <div class="table-viewport">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">TIEMPO</th>
+                            <th style="width: 50px;">DIR</th>
+                            <th style="width: 160px;">ADDRESS PATH</th>
+                            <th style="width: 70px;">TYPES</th>
+                            <th style="width: 220px;">ARGUMENTOS (PAYLOAD)</th>
+                            <th style="width: 90px;">LATENCIA</th>
+                            <th>DESTINO UDP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="osc-tbody">
+                        <!-- Filas OSC -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </main>
 
     <script>
-        // Inicializar indicadores de los 16 canales MIDI
+        // --- 1. GESTOR DE TEMA CLARO / OSCURO (CON PERSISTENCIA) ---
+        const themeToggleBtn = document.getElementById('btn-theme-toggle');
+        const themeLabel = document.getElementById('theme-label');
+        const themeIcon = document.getElementById('theme-icon');
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('midicontrol_theme', theme);
+            if (theme === 'light') {
+                themeLabel.textContent = 'TEMA: CLARO';
+                themeIcon.textContent = '[☼]';
+            } else {
+                themeLabel.textContent = 'TEMA: OSCURO';
+                themeIcon.textContent = '[◐]';
+            }
+        }
+
+        const savedTheme = localStorage.getItem('midicontrol_theme') || 'dark';
+        applyTheme(savedTheme);
+
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        });
+
+        // --- 2. INICIALIZAR CANALES MIDI ---
         const chContainer = document.getElementById('channels-container');
         for (let i = 1; i <= 16; i++) {
             const chBox = document.createElement('div');
@@ -588,11 +787,12 @@
             chContainer.appendChild(chBox);
         }
 
-        // Estado y Métricas
+        // --- 3. ESTADO Y VARIABLES DE TELEMETRÍA ---
         let totalCount = 0;
         let activeNotes = 0;
         let latencyAccumulator = 0;
         let isPaused = false;
+        let oscPacketCount = 0;
         const channelTimers = {};
 
         const valTotal = document.getElementById('val-total');
@@ -600,11 +800,110 @@
         const valLatency = document.getElementById('val-latency');
         const valTarget = document.getElementById('val-target');
         const tbody = document.getElementById('events-tbody');
+        const oscTbody = document.getElementById('osc-tbody');
         const feedCounter = document.getElementById('feed-counter');
+        const oscCounter = document.getElementById('osc-counter');
         const socketLed = document.getElementById('socket-led');
         const socketStatus = document.getElementById('socket-status');
         const btnPause = document.getElementById('btn-pause');
         const pauseText = document.getElementById('pause-text');
+
+        // Pestañas
+        const tabMidi = document.getElementById('tab-midi');
+        const tabOsc = document.getElementById('tab-osc');
+        const tabDual = document.getElementById('tab-dual');
+        const panelMidi = document.getElementById('panel-midi');
+        const panelOsc = document.getElementById('panel-osc');
+
+        function setView(mode) {
+            tabMidi.classList.remove('active');
+            tabOsc.classList.remove('active');
+            tabDual.classList.remove('active');
+
+            if (mode === 'midi') {
+                tabMidi.classList.add('active');
+                panelMidi.classList.remove('hidden');
+                panelOsc.classList.add('hidden');
+            } else if (mode === 'osc') {
+                tabOsc.classList.add('active');
+                panelMidi.classList.add('hidden');
+                panelOsc.classList.remove('hidden');
+            } else if (mode === 'dual') {
+                tabDual.classList.add('active');
+                panelMidi.classList.remove('hidden');
+                panelOsc.classList.remove('hidden');
+            }
+        }
+
+        tabMidi.addEventListener('click', () => setView('midi'));
+        tabOsc.addEventListener('click', () => setView('osc'));
+        tabDual.addEventListener('click', () => setView('dual'));
+
+        // Selectores de Dispositivos y Modos
+        const selectMidiIn = document.getElementById('select-midi-in');
+        const selectMidiOut = document.getElementById('select-midi-out');
+        const btnRefreshDevices = document.getElementById('btn-refresh-devices');
+        const toggleMidi = document.getElementById('toggle-midi');
+        const toggleOsc = document.getElementById('toggle-osc');
+
+        let isMidiEnabled = true;
+        let isOscEnabled = true;
+
+        toggleMidi.addEventListener('click', () => {
+            isMidiEnabled = !isMidiEnabled;
+            toggleMidi.classList.toggle('active', isMidiEnabled);
+        });
+
+        toggleOsc.addEventListener('click', () => {
+            isOscEnabled = !isOscEnabled;
+            toggleOsc.classList.toggle('active', isOscEnabled);
+        });
+
+        btnRefreshDevices.addEventListener('click', () => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'get_devices' }));
+            }
+        });
+
+        selectMidiIn.addEventListener('change', (e) => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'set_midi_input', device: e.target.value }));
+            }
+        });
+
+        selectMidiOut.addEventListener('change', (e) => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'set_midi_output', device: e.target.value }));
+            }
+        });
+
+        function updateDeviceDropdowns(inventory) {
+            const currentIn = inventory.activeInput || 'none';
+            selectMidiIn.innerHTML = '<option value="none">-- Sin entrada (Desconectado) --</option>';
+            (inventory.inputs || []).forEach(inp => {
+                const opt = document.createElement('option');
+                opt.value = inp.name;
+                opt.textContent = `${inp.name} (${inp.manufacturer || 'General'})`;
+                if (inp.name === currentIn) opt.selected = true;
+                selectMidiIn.appendChild(opt);
+            });
+
+            const currentOut = inventory.activeOutput || 'none';
+            selectMidiOut.innerHTML = '<option value="none">-- Sin salida (Desconectado) --</option>';
+            (inventory.outputs || []).forEach(out => {
+                const opt = document.createElement('option');
+                opt.value = out.name;
+                opt.textContent = `${out.name} (${out.manufacturer || 'General'})`;
+                if (out.name === currentOut) opt.selected = true;
+                selectMidiOut.appendChild(opt);
+            });
+
+            if (inventory.activeOutput) {
+                valTarget.textContent = inventory.activeOutput;
+            } else {
+                valTarget.textContent = 'DESCONECTADO';
+            }
+        }
 
         function triggerChannelLed(chNumber) {
             const el = document.getElementById(`ch-${chNumber}`);
@@ -616,25 +915,26 @@
             }, 300);
         }
 
-        // Conexión WebSocket al Sentinel
+        // --- 4. WEBSOCKET DE TELEMETRÍA Y CONTROL ---
         const wsHost = window.location.hostname || '127.0.0.1';
         const ws = new WebSocket(`ws://${wsHost}:8081`);
 
         ws.onopen = () => {
             socketLed.style.backgroundColor = 'var(--led-green)';
             socketLed.style.boxShadow = '0 0 10px var(--led-green-glow)';
-            socketStatus.textContent = 'ONLINE / ENLAZADO';
+            socketStatus.textContent = '[ ENLAZADO ]';
+            ws.send(JSON.stringify({ type: 'get_devices' }));
         };
 
         ws.onclose = () => {
             socketLed.style.backgroundColor = 'var(--led-red)';
-            socketLed.style.boxShadow = '0 0 10px var(--led-red-glow)';
-            socketStatus.textContent = 'DESCONECTADO';
+            socketLed.style.boxShadow = 'none';
+            socketStatus.textContent = '[ DESCONECTADO ]';
         };
 
         ws.onerror = () => {
             socketLed.style.backgroundColor = 'var(--led-red)';
-            socketStatus.textContent = 'ERROR EN SOCKET';
+            socketStatus.textContent = '[ ERROR SOCKET ]';
         };
 
         ws.onmessage = (event) => {
@@ -642,6 +942,8 @@
                 const payload = JSON.parse(event.data);
                 if (payload.type === 'telemetry') {
                     handleTelemetry(payload.data);
+                } else if (payload.type === 'device_inventory') {
+                    updateDeviceDropdowns(payload);
                 }
             } catch (err) {
                 console.error('Error parseando telemetría:', err);
@@ -649,6 +951,11 @@
         };
 
         function handleTelemetry(data) {
+            if (data.protocol === 'osc') {
+                handleOscTelemetry(data);
+                return;
+            }
+
             totalCount++;
             valTotal.textContent = totalCount.toLocaleString();
 
@@ -659,12 +966,10 @@
             }
             valActive.textContent = activeNotes;
 
-            // Iluminar canal
             if (data.channel) {
                 triggerChannelLed(data.channel);
             }
 
-            // Calcular latencia
             if (data.durationUs) {
                 latencyAccumulator = (latencyAccumulator * 0.9) + (data.durationUs * 0.1);
                 valLatency.innerHTML = `${latencyAccumulator.toFixed(1)}<span class="meter-unit">µs</span>`;
@@ -676,40 +981,64 @@
 
             if (isPaused) return;
 
-            // Renderizar fila en la tabla
             const tr = document.createElement('tr');
             tr.className = 'row-flash';
 
             const timeStr = new Date(data.timestamp || Date.now()).toISOString().split('T')[1].replace('Z', '');
-            const isNoteOn = data.event === 'noteon';
-            const badgeClass = isNoteOn ? 'badge-noteon' : 'badge-noteoff';
-
-            const latUs = data.durationUs || 0;
-            let latClass = 'latency-fast';
-            if (latUs > 3000) latClass = 'latency-high';
-            else if (latUs > 1000) latClass = 'latency-mid';
+            const direction = data.dir || 'out';
+            const msgDesc = data.description || (data.event.toUpperCase() + (data.note !== undefined ? ' ' + data.note : ''));
+            const valDisplay = data.velocity !== undefined ? data.velocity : '-';
+            const hexDisplay = data.hex || (data.event === 'noteon' ? '9' + (data.channel-1).toString(16) + ' ' + (data.note).toString(16) : '-');
 
             tr.innerHTML = `
-                <td style="color: var(--text-dim);">#${totalCount}</td>
-                <td>${timeStr}</td>
-                <td><span class="badge-type ${badgeClass}">${data.event.toUpperCase()}</span></td>
-                <td style="font-weight: 600;">${data.channel || 1}</td>
-                <td style="color: var(--text-main); font-weight: 700;">${data.note}</td>
-                <td>${data.velocity !== undefined ? data.velocity : '-'}</td>
-                <td><span class="latency-pill ${latClass}">${latUs.toFixed(1)} µs</span></td>
-                <td style="color: var(--text-muted);">${data.midiStatus?.name || 'USB2.0-MIDI'}</td>
+                <td style="color: var(--text-muted);">${timeStr}</td>
+                <td style="color: ${direction === 'in' ? 'var(--accent-cyan)' : 'var(--led-green)'}; font-weight: 700;">${direction}</td>
+                <td style="color: var(--text-primary); font-weight: 600;">${msgDesc}</td>
+                <td style="font-weight: 600; color: var(--accent-cyan);">${data.channel || 1}</td>
+                <td style="color: var(--text-primary); font-weight: 700;">${valDisplay}</td>
+                <td style="color: var(--text-muted);">${hexDisplay}</td>
+                <td style="color: var(--text-dim);">${data.midiStatus?.name || 'Local'}</td>
             `;
 
             tbody.insertBefore(tr, tbody.firstChild);
 
-            // Mantener máximo 100 filas en el DOM para evitar fugas de memoria y mantener 60fps
             if (tbody.children.length > 100) {
                 tbody.removeChild(tbody.lastChild);
             }
             feedCounter.textContent = `${tbody.children.length} ENTRADAS`;
         }
 
-        // Botonera de Control
+        function handleOscTelemetry(data) {
+            oscPacketCount++;
+            oscCounter.textContent = `${oscPacketCount} PAQUETES`;
+
+            if (isPaused) return;
+
+            const tr = document.createElement('tr');
+            tr.className = 'row-flash';
+
+            const timeStr = new Date(data.timestamp || Date.now()).toISOString().split('T')[1].replace('Z', '');
+            const direction = data.dir || 'out';
+            const latUs = data.durationUs || 0;
+
+            tr.innerHTML = `
+                <td style="color: var(--text-muted);">${timeStr}</td>
+                <td style="color: var(--accent-violet); font-weight: 700;">${direction}</td>
+                <td style="color: var(--accent-cyan); font-weight: 600;">${data.path}</td>
+                <td style="color: var(--text-muted); font-weight: 600;">${data.types}</td>
+                <td style="color: var(--text-primary); font-weight: 600;">${data.args}</td>
+                <td style="color: var(--led-green); font-weight: 600;">${latUs.toFixed(1)} µs</td>
+                <td style="color: var(--text-dim);">${data.target}</td>
+            `;
+
+            oscTbody.insertBefore(tr, oscTbody.firstChild);
+
+            if (oscTbody.children.length > 100) {
+                oscTbody.removeChild(oscTbody.lastChild);
+            }
+        }
+
+        // --- 5. ACCIONES & TECLADO ---
         document.getElementById('btn-panic').addEventListener('click', () => {
             if (ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'midi', event: 'panic' }));
@@ -721,16 +1050,17 @@
         btnPause.addEventListener('click', () => {
             isPaused = !isPaused;
             pauseText.textContent = isPaused ? 'REANUDAR' : 'PAUSAR VISTA';
-            btnPause.style.borderColor = isPaused ? 'var(--led-amber)' : 'var(--border-subtle)';
-            btnPause.style.color = isPaused ? 'var(--led-amber)' : 'var(--text-main)';
+            btnPause.style.borderColor = isPaused ? 'var(--led-amber)' : 'var(--border-hairline)';
+            btnPause.style.color = isPaused ? 'var(--led-amber)' : 'var(--text-secondary)';
         });
 
         document.getElementById('btn-clear').addEventListener('click', () => {
             tbody.innerHTML = '';
+            oscTbody.innerHTML = '';
             feedCounter.textContent = '0 ENTRADAS';
+            oscCounter.textContent = '0 PAQUETES';
         });
 
-        // Atajos de teclado en el navegador
         window.addEventListener('keydown', (e) => {
             if (e.key === 'p' || e.key === 'P') {
                 document.getElementById('btn-panic').click();

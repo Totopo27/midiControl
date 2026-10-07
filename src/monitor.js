@@ -15,6 +15,8 @@ class TerminalMonitor {
     }
 
     logEvent(event) {
+        if (event.protocol === 'osc') return; // TerminalMonitor es solo para eventos MIDI
+
         this.totalCount++;
         if (event.event === 'noteon') {
             this.noteOnCount++;

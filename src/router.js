@@ -9,7 +9,10 @@ class MidiRouter {
         this.midi = null;
         this.activeOutput = null;
         this.activeOutputName = null;
+        this.activeInput = null;
+        this.activeInputName = null;
         this.activeNotes = new Map(); // key: `${channel}_${note}` -> timestamp
+        this.inputListeners = [];
     }
 
     async init() {
@@ -29,26 +32,131 @@ class MidiRouter {
         }));
     }
 
+    listInputs() {
+        if (!this.midi) throw new Error('MidiRouter no inicializado. Llama a init() primero.');
+        const info = this.midi.info();
+        return (info.inputs || []).map((inp, idx) => ({
+            index: idx,
+            name: inp.name,
+            manufacturer: inp.manufacturer || 'Desconocido'
+        }));
+    }
+
+    onMidiInput(callback) {
+        if (typeof callback === 'function') {
+            this.inputListeners.push(callback);
+        }
+    }
+
+    async openInput(target) {
+        if (!this.midi) await this.init();
+
+        if (this.activeInput) {
+            try { this.activeInput.close(); } catch (_) {}
+            this.activeInput = null;
+            this.activeInputName = null;
+        }
+
+        if (!target || target === 'none') {
+            return { status: 'disconnected', name: null };
+        }
+
+        return new Promise((resolve, reject) => {
+            const port = this.midi.openMidiIn(target);
+            port.and(() => {
+                this.activeInput = port;
+                this.activeInputName = port.name();
+
+                port.connect((msg) => {
+                    const statusByte = msg[0];
+                    const channel = (statusByte & 0x0F) + 1;
+                    const command = statusByte >> 4;
+                    const data1 = msg[1];
+                    const data2 = msg[2] !== undefined ? msg[2] : 0;
+
+                    let eventName = 'raw';
+                    let description = `Raw 0x${statusByte.toString(16).toUpperCase()}`;
+
+                    if (command === 0x9) {
+                        eventName = data2 > 0 ? 'noteon' : 'noteoff';
+                        description = `${eventName.toUpperCase()} ${data1}`;
+                    } else if (command === 0x8) {
+                        eventName = 'noteoff';
+                        description = `NOTEOFF ${data1}`;
+                    } else if (command === 0xB) {
+                        eventName = 'cc';
+                        description = `Control Change ${data1}`;
+                    } else if (command === 0xC) {
+                        eventName = 'program_change';
+                        description = `Program change ${data1}`;
+                    } else if (command === 0xE) {
+                        eventName = 'pitchbend';
+                        description = `Pitchbend ${data1 | (data2 << 7)}`;
+                    }
+
+                    const hexBytes = Array.from(msg)
+                        .map(b => b.toString(16).padStart(2, '0').toUpperCase())
+                        .join(' ');
+
+                    const parsed = {
+                        type: 'midi_hardware_in',
+                        dir: 'in',
+                        event: eventName,
+                        description: description,
+                        channel: channel,
+                        note: data1,
+                        velocity: data2,
+                        hex: hexBytes,
+                        source: this.activeInputName,
+                        timestamp: Date.now()
+                    };
+
+                    for (const cb of this.inputListeners) {
+                        try { cb(parsed); } catch (e) {}
+                    }
+                });
+
+                resolve({
+                    status: 'connected',
+                    name: this.activeInputName
+                });
+            });
+
+            port.or(() => {
+                reject(new Error(`No se pudo abrir puerto MIDI IN "${target}" (posiblemente ocupado por otra app)`));
+            });
+        });
+    }
+
     async openOutput(target) {
         if (!this.midi) await this.init();
 
         if (this.activeOutput) {
             await this.panic();
-            this.activeOutput.close();
+            try { this.activeOutput.close(); } catch (_) {}
             this.activeOutput = null;
             this.activeOutputName = null;
         }
 
-        try {
-            this.activeOutput = await this.midi.openMidiOut(target);
-            this.activeOutputName = this.activeOutput.name();
-            return {
-                status: 'connected',
-                name: this.activeOutputName
-            };
-        } catch (err) {
-            throw new Error(`Fallo al abrir puerto MIDI OUT "${target}": ${err.message}`);
+        if (!target || target === 'none') {
+            return { status: 'disconnected', name: null };
         }
+
+        return new Promise((resolve, reject) => {
+            const port = this.midi.openMidiOut(target);
+            port.and(() => {
+                this.activeOutput = port;
+                this.activeOutputName = port.name();
+                resolve({
+                    status: 'connected',
+                    name: this.activeOutputName
+                });
+            });
+
+            port.or(() => {
+                reject(new Error(`No se pudo abrir puerto MIDI OUT "${target}" (posiblemente ocupado por otra app)`));
+            });
+        });
     }
 
     sendNoteOn(channel, note, velocity = 127) {

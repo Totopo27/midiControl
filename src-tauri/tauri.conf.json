@@ -10,7 +10,7 @@
   "app": {
     "windows": [
       {
-        "title": "MIDI & OSC Live Sentinel",
+        "title": "MIDI & OSC Control Console",
         "width": 1024,
         "height": 720,
         "resizable": true,

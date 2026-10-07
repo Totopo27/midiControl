@@ -1,104 +1,105 @@
-# MIDI Control: Universal Live Sentinel Bridge (MIDI & OSC)
+# midiControl
 
-> **Estación Universal de Interconexión, Ruteo Matricial y Monitoreo en Tiempo Real para Conciertos en Vivo y Estudio**  
-> *Soporte simultáneo para Controladores Físicos y Tablets (iPad vía cable USB / Wi-Fi), Salida MIDI 1.0 estándar hacia Sintetizadores de Hardware (Analógicos, Modulares, Eurorack) y Datagramas UDP OSC hacia Software Creativo (SuperCollider, Max/MSP).*
-
----
-
-## 🚀 Características Principales
-
-- **Bifurcación Paralela de Latencia Cero:** Envío simultáneo a puertos físicos MIDI DIN/USB y sockets UDP OSC con latencia media de **~142 µs** y pico máximo inferior a 1.2 ms.
-- **Protección Anti-Stuck Notes (Cero Notas Pegadas):** Mapeo estricto del ciclo Note-On / Note-Off con registro de notas activas en memoria (`activeNotesMap`).
-- **Botón de Pánico Universal (`All Notes Off`):** Apagado instantáneo de notas activas y envío de controladores CC 123 y CC 120 en los 16 canales ante cualquier emergencia en vivo.
-- **Dashboard Web de Telemetría en Tiempo Real:** Monitor visual de alto contraste accesible en red local (`http://localhost:3000` o desde iPad) con tasa de refresco no bloqueante vía WebSocket (`:8081`).
-- **Agnóstico al Hardware:** Funciona de forma transparente con interfaces USB-MIDI estándar, módulos eurorack cuantizadores (ej. Tubbutec µTune) y sintetizadores externos.
+Puente de baja latencia para control musical en vivo. Recibe eventos desde interfaces táctiles o controladores web (vía WebSockets) y los despacha simultáneamente a sintetizadores físicos por MIDI DIN/USB y a entornos de audio digital (SuperCollider, Max/MSP) mediante datagramas UDP OSC.
 
 ---
 
-## 📐 Arquitectura del Sistema
+## Qué resuelve este sistema
+
+Al tocar en vivo con interfaces experimentales (como teclados microtonales Wilson en navegadores de iPad o tablets), suele surgir la necesidad de controlar dos mundos a la vez:
+1. Hardware analógico o modular (módulos Eurorack cuantizadores como el Tubbutec µTune, sintetizadores con entrada DIN-5 o USB).
+2. Motores de síntesis algorítmica en la computadora (SuperCollider, Max/MSP, Pure Data).
+
+Este puente unifica ambas salidas en un único proceso de Node.js, manteniendo las notas sincronizadas, evitando notas colgadas (*stuck notes*) y ofreciendo un monitor web de inspección en tiempo real con botón de pánico.
+
+---
+
+## Características técnicas
+
+- **Bifurcación paralela:** Despacho concurrente a la interfaz MIDI del sistema operativo (WinMM en Windows, CoreMIDI en macOS vía `jzz`) y a sockets UDP OSC (vía `dgram`). En pruebas locales con 200 eventos concurrentes, la latencia media se situó en ~142 microsegundos (pico máximo bajo 1.2 ms).
+- **Control de notas activas:** Mapeo en memoria de cada par Note-On / Note-Off (`activeNotesMap`) para garantizar que ninguna tecla quede sonando indefinidamente si se interrumpe la conexión o se suelta rápido una tecla táctil.
+- **Función de pánico (All Notes Off):** Corte inmediato de todas las notas activas registradas y emisión de controladores de emergencia CC 123 y CC 120 en los 16 canales MIDI.
+- **Monitor de tráfico en tiempo real:** Interfaz web local (`http://localhost:3000`) servida mediante Express y actualizada vía WebSocket (`puerto 8081`). Muestra marcas de tiempo en microsegundos, canal, tipo de evento, nota, velocidad y destino.
+- **Compatibilidad de hardware:** Reconoce interfaces USB-MIDI estándar de clase complaciente y puertos DIN sin configuraciones propietarias.
+
+---
+
+## Flujo de datos
 
 ```text
- ┌────────────────────────────────────────────────────────┐
- │            CAPA 1: CONTROLADORES / ENTRADAS            │
- │  - Tablets / iPad (Cable USB con red local o Wi-Fi)    │
- │  - Teclados e interfaces web (Hexgrid, TouchOSC)       │
- │  - Controladores MIDI físicos                          │
- └───────────────────────────┬────────────────────────────┘
-                             │ WebSockets / MIDI IN / OSC
-                             ▼
- ┌────────────────────────────────────────────────────────┐
- │        CAPA 2 & 3: INGESTA, RUTEO Y BIFURCACIÓN        │
- │  - StreamProcessor: Despacho asíncrono no bloqueante   │
- │  - MidiRouter: Salida física estándar (0-127, Ch 1-16) │
- │  - Encoder OSC 1.0: Datagramas UDP directos            │
- └─────────────┬────────────────────────────┬─────────────┘
-               │ Rama A: MIDI Físico        │ Rama B: OSC UDP
-               ▼                            ▼
- ┌───────────────────────────┐ ┌──────────────────────────┐
- │ PUERTO MIDI FÍSICO OUT    │ │ PUERTO OSC / RED         │
- │ - Interfaz USB / DIN-5    │ │ - SuperCollider (57120)  │
- │ - Módulos Eurorack / CV   │ │ - Max/MSP (8000)         │
- │ - Sintes Analógicos / HW  │ │ - DAWs / VST Hosts       │
- └─────────────┬─────────────┘ └────────────┬─────────────┘
-               │                            │
-               └──────────────┬─────────────┘
-                              │
-                              ▼
- ┌────────────────────────────────────────────────────────┐
- │      CAPA 4: MONITOR DE TRÁFICO EN TIEMPO REAL         │
- │  - Inspección en vivo de entradas y salidas            │
- │  - Dashboard Web & Consola de telemetría               │
- │  - Control de Pánico (All Notes Off)                   │
- └────────────────────────────────────────────────────────┘
+ Controladores y fuentes
+ ├── iPad / Tablet (cable USB o red Wi-Fi local)
+ ├── Teclados web (Hexgrid, Wilson microtonal)
+ └── Controladores físicos MIDI In
+          │
+          │ WebSockets (8081) / MIDI In
+          ▼
+ midiControl (Node.js)
+ ├── StreamProcessor: normalización de eventos y control de estado
+ ├── MidiRouter: salida MIDI 1.0 (canales 1 a 16)
+ └── OSCRouter: codificación binaria de datagramas OSC 1.0
+          │
+          ├──► Salida física: Interfaz USB/DIN -> Sintetizadores / Eurorack
+          ├──► Salida red: UDP 127.0.0.1:57120 -> SuperCollider / Max/MSP
+          └──► Telemetría: WebSocket -> Monitor web (http://localhost:3000)
 ```
 
 ---
 
-## 🛠️ Instalación y Uso
+## Requisitos y dependencias
 
-### 1. Requisitos
-- **Node.js:** v18 o superior (validado en Node.js v24 sobre Windows y macOS).
-- **Interfaz MIDI:** Cualquier interfaz USB-MIDI o puerto DIN reconocido por el sistema operativo.
+- **Node.js:** Versión 18 o superior (probado en Node.js v20 y v24 en Windows y macOS).
+- **Interfaz MIDI:** Cualquier interfaz USB-MIDI o convertidor USB a DIN reconocido por el sistema operativo.
+- **Red:** Puerto UDP 57120 libre para SuperCollider (configurable en `src/osc.js`) y puerto TCP 8081 para el servidor de WebSockets.
 
-### 2. Instalación
+---
+
+## Instalación
+
 ```bash
 git clone https://github.com/Totopo27/midiControl.git
 cd midiControl
 npm install
 ```
 
-### 3. Ejecución de Tests con Compuertas (Gates 0 a 4)
-Para certificar el entorno y la latencia antes de un concierto:
+---
+
+## Uso
+
+### Verificación previa (batería de pruebas)
+
+El proyecto incluye pruebas automatizadas que miden detección de puertos, formato de bytes, concurrencia, respuesta del monitor y estrés:
+
 ```bash
 npm test
 ```
 
-### 4. Puesta en Marcha en Vivo
+### Ejecución del puente
+
 ```bash
 npm start
 ```
 
-Al iniciar la estación:
-- Se conectará automáticamente al puerto MIDI físico disponible (ej. `USB2.0-MIDI`).
-- Levantará el **Dashboard de Monitoreo** en `http://localhost:3000`.
-- Abrirá el socket WebSocket en el puerto `8081` para recibir eventos de tus controladores.
-- Enviará datagramas OSC a `127.0.0.1:57120` (SuperCollider) de forma transparente.
+Al arrancar:
+1. Detecta y abre la primera interfaz MIDI física de salida disponible (por ejemplo, `USB2.0-MIDI` o la interfaz predeterminada del sistema).
+2. Inicia el servidor HTTP del monitor en `http://localhost:3000`.
+3. Abre el socket WebSocket en el puerto `8081` para recibir eventos desde el teclado web o cliente en la tablet.
+4. Queda listo para emitir paquetes OSC a `127.0.0.1:57120`.
 
 ---
 
-## 📋 Validación de Calidad (Metodología de Compuertas)
+## Pruebas de validación
 
-El sistema fue desarrollado bajo una metodología estricta de 5 compuertas de validación (*Gates*):
-
-| Fase | Compuerta | Verificación Técnica | Estado |
-| :--- | :--- | :--- | :---: |
-| **Fase 0** | Gate 0: Auditoría | Detección de interfaces MIDI físicas y sockets UDP sin bloqueos de red. | **PASS** ✅ |
-| **Fase 1** | Gate 1: MIDI Out | Note-On/Off estándar byte a byte con canal seleccionable (1-16). | **PASS** ✅ |
-| **Fase 2** | Gate 2: Concurrencia | 200 eventos concurrentes: MIDI + OSC simultáneos con latencia media de 142 µs. | **PASS** ✅ |
-| **Fase 3** | Gate 3: Live Monitor | Telemetría en tiempo real y comando de pánico (*All Notes Off*) verificado. | **PASS** ✅ |
-| **Fase 4** | Gate 4: Estrés Directo | Ráfaga de 1000 eventos (500 notas en 5 octavas): 0% pérdida, 0 notas pegadas. | **PASS** ✅ |
+| Fase | Alcance | Verificación | Resultado |
+| :--- | :--- | :--- | :--- |
+| Fase 0 | Auditoría de entorno | Enumeración de interfaces MIDI físicas y comprobación de socket UDP. | PASS |
+| Fase 1 | Emisión MIDI estándar | Note-On y Note-Off byte a byte con canal seleccionable (1-16). | PASS |
+| Fase 2 | Concurrencia MIDI + OSC | 200 eventos simultáneos hacia hardware y red con latencia media de 142 µs. | PASS |
+| Fase 3 | Monitor e inspección | Transmisión de telemetría al dashboard y comando All Notes Off. | PASS |
+| Fase 4 | Prueba de estrés | Ráfaga de 1000 eventos (500 notas en 5 octavas) con 0% pérdida y 0 notas colgadas. | PASS |
 
 ---
 
-## 📄 Licencia
-ISC License.
+## Licencia
+
+ISC.

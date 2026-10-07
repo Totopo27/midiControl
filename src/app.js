@@ -48,7 +48,11 @@ class LiveSentinelApp {
         }
 
         if (portToOpen) {
-            await this.processor.midiRouter.openOutput(portToOpen);
+            try {
+                await this.processor.midiRouter.openOutput(portToOpen);
+            } catch (err) {
+                console.warn(`[MIDI] No se pudo abrir salida por defecto "${portToOpen}": ${err.message}. Podrás seleccionarla manualmente desde la consola.`);
+            }
         }
 
         // Suscribir el monitor de consola
@@ -115,12 +119,50 @@ class LiveSentinelApp {
         this.wss.on('connection', (ws) => {
             this.webClients.add(ws);
 
-            ws.on('message', (data) => {
+            // Enviar inventario de dispositivos conectados al recién conectado
+            this.sendDeviceInventory(ws);
+
+            ws.on('message', async (data) => {
                 try {
                     // Limitar tamaño de mensaje para prevenir DoS por memoria
-                    if (data.length > 2048) return;
+                    if (data.length > 4096) return;
 
                     const msg = JSON.parse(data);
+
+                    // COMANDOS DE CONTROL DE DISPOSITIVOS Y MODOS
+                    if (msg.type === 'get_devices') {
+                        this.sendDeviceInventory(ws);
+                        return;
+                    }
+
+                    if (msg.type === 'set_midi_output') {
+                        try {
+                            if (msg.device === 'none') {
+                                if (this.processor.midiRouter.activeOutput) {
+                                    this.processor.midiRouter.activeOutput.close();
+                                    this.processor.midiRouter.activeOutput = null;
+                                    this.processor.midiRouter.activeOutputName = null;
+                                }
+                            } else {
+                                await this.processor.midiRouter.openOutput(msg.device);
+                            }
+                            this.broadcastDeviceInventory();
+                        } catch (e) {
+                            ws.send(JSON.stringify({ type: 'error', message: e.message }));
+                        }
+                        return;
+                    }
+
+                    if (msg.type === 'set_midi_input') {
+                        try {
+                            await this.processor.midiRouter.openInput(msg.device);
+                            this.broadcastDeviceInventory();
+                        } catch (e) {
+                            ws.send(JSON.stringify({ type: 'error', message: e.message }));
+                        }
+                        return;
+                    }
+
                     if (msg.type === 'midi') {
                         const rawCh = parseInt(msg.channel, 10);
                         const ch = (!isNaN(rawCh) && rawCh >= 1 && rawCh <= 16) ? (rawCh - 1) : this.selectedChannel;
@@ -153,6 +195,28 @@ class LiveSentinelApp {
         });
 
         return { localIP: LOCAL_IP, httpPort: HTTP_PORT, wsPort: WS_PORT };
+    }
+
+    sendDeviceInventory(ws) {
+        if (ws.readyState !== WebSocket.OPEN) return;
+        try {
+            const outputs = this.processor.midiRouter.listOutputs();
+            const inputs = this.processor.midiRouter.listInputs();
+            const payload = JSON.stringify({
+                type: 'device_inventory',
+                outputs,
+                inputs,
+                activeOutput: this.processor.midiRouter.activeOutputName,
+                activeInput: this.processor.midiRouter.activeInputName
+            });
+            ws.send(payload);
+        } catch (e) {}
+    }
+
+    broadcastDeviceInventory() {
+        for (const ws of this.webClients) {
+            this.sendDeviceInventory(ws);
+        }
     }
 
     panic() {

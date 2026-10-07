@@ -1,102 +1,90 @@
-# Metodología de Planificación y Arquitectura de Proyectos
+# Metodología de planificación técnica por compuertas de validación
 
-> **Guía práctica y reproducible para el diseño de sistemas modulares, ecosistemas de skills y flujos de trabajo con compuertas de validación (*gates*).**  
-> *Basada en el proceso implementado y validado en el proyecto `yiMod` (Smart Sentinel-Yi).*
+Guía de arquitectura y organización de proyectos técnicos basada en desarrollo modular y compuertas de validación (*gates*).
 
 ---
 
-## 1. Visión General del Proceso
+## 1. Principio fundamental
 
-El objetivo de esta metodología es evitar la improvisación técnica y el desarrollo desordenado. Antes de programar código final, el proyecto se estructura en **cuatro etapas secuenciales**:
+El propósito de esta metodología es evitar el desarrollo por ensayo y error sin rumbo fijo. Antes de escribir código definitivo, cualquier proyecto técnico se estructura en cuatro etapas concretas:
 
 ```text
-┌─────────────────────────────────┐
-│ 1. Levantamiento de Recursos    │ ──► Mapeo comunitario, firmwares/drivers, librerías base
-└────────────────┬────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────┐
-│ 2. Arquitectura del Sistema     │ ──► Separación en capas de responsabilidad única
-└────────────────┬────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────┐
-│ 3. Ecosistema de Skills (.md)   │ ──► Creación de roles/agentes expertos modulares
-└────────────────┬────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────┐
-│ 4. Fases con Compuertas (Gates) │ ──► Flujo secuencial: ningún paso avanza sin test medible
-└─────────────────────────────────┘
+ 1. Levantamiento de recursos
+    └── Documentar herramientas, protocolos, librerías y restricciones del hardware.
+         │
+ 2. Arquitectura del sistema
+    └── Separar el sistema en capas con responsabilidades independientes.
+         │
+ 3. Definición modular de tareas
+    └── Aislar los componentes del sistema para resolver problemas acotados.
+         │
+ 4. Fases con compuertas de validación
+    └── Cada etapa concluye con una prueba medible y reproducible.
 ```
 
 ---
 
-## 2. Detalle de las 4 Etapas de Preparación
+## 2. Las cuatro etapas de preparación
 
-### Etapa 1: Levantamiento y Curaduría de Recursos Base
-* **Objetivo:** No reinventar la rueda; mapear el estado del arte y el soporte del hardware o ecosistema.
-* **Acciones:**
-  1. Identificar librerías clave, repositorios en GitHub con soluciones similares o firmwares/drivers oficiales.
-  2. Documentar foros de discusión técnica (ej. DashCamTalk, foros de audio/MIDI, StackOverflow, GitHub Issues).
-  3. Registrar herramientas de configuración de bajo nivel o utilidades existentes.
-* **Artefacto resultante:** `recursos_<tema_o_dispositivo>.md` (con enlaces, descripciones y casos de uso concretos de cada recurso).
-
----
-
-### Etapa 2: Diseño de la Arquitectura en Capas
-* **Objetivo:** Definir con precisión qué componente hace qué cosa, separando el hardware, la ingesta de datos, el procesamiento central y la capa de interacción o usuario.
-* **Patrón aplicado en `yiMod`:**
-  1. **Capa Edge / Dispositivo:** Configuración de bajo nivel y servicio nativo (ej. streaming RTSP en cámara).
-  2. **Capa de Ingesta / Transporte:** Hilo desacoplado para capturar eventos o datos en tiempo real sin latencia acumulada ni bloqueos.
-  3. **Capa de Procesamiento / Lógica Central:** Inferencia o transformación pesada (ej. modelos de IA en GPU o procesamiento de mensajes).
-  4. **Capa de Control / Interfaz de Usuario:** Servicio asíncrono para alertas, comandos o interacción externa (ej. bot de Telegram con whitelist).
-* **Artefacto resultante:** Diagrama de bloques y descripción del pipeline en la sección 1 del plan de trabajo.
+### Etapa 1: Levantamiento y selección de recursos base
+- **Objetivo:** Analizar el estado de las herramientas disponibles, especificaciones de protocolos y compatibilidad antes de tomar decisiones técnicas irreversibles.
+- **Acciones:**
+  1. Identificar librerías clave y dependencias directas.
+  2. Documentar limitaciones conocidas de la plataforma (controladores de sistema operativo, puertos, restricciones de red o seguridad).
+  3. Registrar proyectos de referencia y estándares oficiales (por ejemplo, especificaciones MIDI 1.0, OSC 1.0, RFC de WebSockets).
+- **Documento resultante:** Un archivo de recursos (`recursos_<tema>.md`) con enlaces, comandos de prueba y notas concretas de compatibilidad.
 
 ---
 
-### Etapa 3: Modularización en Skills Especializadas (`.opencode/skills/`)
-* **Objetivo:** Asignar dominios de conocimiento acotados a agentes/skills específicos para que cada tarea técnica se ejecute con estándares rigurosos.
-* **Estructura típica de 4 roles:**
-
-| Tipo de Rol | Función en el Proyecto | Ejemplo en `yiMod` |
-| :--- | :--- | :--- |
-| **Auditor de Stack / Dependencias** | Extraer contratos técnicos oficiales (Context7), detectar gotchas comunitarios (WebSearch/GitHub) y verificar compatibilidad y CVEs antes de instalar nada. | `tech-researcher-evaluator` |
-| **Experto en Hardware / Protocolo** | Manejo de bajo nivel, scripts de arranque, formatos de archivo o protocolos de comunicación (ej. MIDI, RTSP, serie). | `yi-firmware-expert` |
-| **Motor de Procesamiento Central** | Pipeline de ejecución crítica, manejo de buffers y algoritmos principales. | `vision-relation-engine` |
-| **Controlador de Salida / UI / Bot** | Despacho asíncrono, seguridad, control de acceso, filtros de saturación (*debounce*) y comandos remotos. | `sentinel-bot-handler` |
-
-* **Artefacto resultante:** Directorios en `.opencode/skills/<nombre-skill>/SKILL.md` definiendo el rol, inputs, outputs y reglas operativas de cada una.
+### Etapa 2: Diseño de la arquitectura en capas
+- **Objetivo:** Delimitar con precisión qué hace cada componente para evitar acoplamientos innecesarios entre el transporte de datos, la lógica central y la interfaz.
+- **Estructura recomendada:**
+  1. **Capa de interfaz o periférico:** Conexión directa con hardware físico o clientes remotos (puertos USB, sockets de red, controladores).
+  2. **Capa de ingesta y transporte:** Hilos o procesos asíncronos para recibir y emitir mensajes sin frenar el flujo de datos.
+  3. **Capa de procesamiento central:** Normalización de datos, seguimiento de estado, enrutamiento matricial y lógica de negocio.
+  4. **Capa de telemetría e inspección:** Herramientas de diagnóstico, registro de eventos y paneles de control accesibles en tiempo real.
+- **Documento resultante:** Diagrama de bloques y descripción del flujo de datos en el plan de arquitectura.
 
 ---
 
-### Etapa 4: Flujo de Trabajo Secuencial con Compuertas de Validación (*Gates*)
-* **Objetivo:** Dividir el desarrollo en fases incrementales donde **la compuerta de salida (*Gate*) es un criterio medible e innegociable** para poder pasar a la siguiente fase.
+### Etapa 3: Modularización de componentes
+- **Objetivo:** Dividir el sistema en módulos con responsabilidades claras y contratos de entrada/salida definidos.
+- **Roles habituales en un sistema de tiempo real:**
+  - **Manejador de hardware y puertos:** Encargado de la detección, apertura y reconexión de interfaces físicas.
+  - **Procesador de flujo:** Encargado del filtrado, conversión de formato y despacho sin bloqueo.
+  - **Manejador de protocolos de red:** Codificación de paquetes, manejo de datagramas UDP o conexiones TCP/WebSocket.
+  - **Módulo de diagnóstico y control:** Interfaz de usuario, métricas de rendimiento y comandos de seguridad (como rutinas de pánico o reinicio).
+- **Documento resultante:** Definición de responsabilidades en la documentación técnica del repositorio.
+
+---
+
+### Etapa 4: Fases de desarrollo con compuertas (*Gates*)
+- **Objetivo:** Dividir el ciclo de trabajo en etapas secuenciales donde avanzar a la siguiente requiere superar una prueba técnica objetiva.
 
 ```text
-[FASE 0] Auditoría & Fijación del Stack  ────► Gate 0: Entorno virtual limpio y dependencias fijadas
+Fase 0: Diagnóstico de entorno   ──► Gate 0: Entorno configurado y dependencias verificadas
    │
    ▼
-[FASE 1] Hardware & Conectividad Base    ────► Gate 1: Comunicación funcional básica verificada
+Fase 1: Conectividad elemental   ──► Gate 1: Comunicación unidireccional comprobada
    │
    ▼
-[FASE 2] Ingesta / Transporte en Tiempo Real ──► Gate 2: Latencia controlada y estabilidad sostenida
+Fase 2: Concurrencia y flujo     ──► Gate 2: Transporte paralelo sin degradación de latencia
    │
    ▼
-[FASE 3] Núcleo de Procesamiento / Lógica ──► Gate 3: Algoritmo/modelo corriendo bajo el SLA requerido
+Fase 3: Telemetría y control     ──► Gate 3: Monitor funcional y comandos de contingencia operativos
    │
    ▼
-[FASE 4] Integración & Control de Usuario ────► Gate 4: Interfaz final recibiendo datos y respondiendo
+Fase 4: Pruebas de estrés        ──► Gate 4: Ejecución continua bajo carga sin errores ni fugas
 ```
 
-* **Artefacto resultante:** `FLUJO_DE_TRABAJO.md` estructurado con objetivos, actividades y la compuerta de salida explícita de cada fase.
+- **Documento resultante:** `FLUJO_DE_TRABAJO.md` con los criterios de aceptación y comandos de verificación de cada fase.
 
 ---
 
-## 3. Lista de Chequeo (*Checklist*) para un Nuevo Proyecto
+## 3. Lista de control para nuevos proyectos
 
-1. [ ] **Definir el problema:** ¿Cuál es la entrada, cuál es la transformación y cuál es la salida deseada?
-2. [ ] **Crear `recursos_<proyecto>.md`:** Listar SDKs, repositorios de referencia, especificaciones de protocolo y foros clave.
-3. [ ] **Dibujar el flujo de datos:** Esquematizar cómo viaja la señal o el dato desde el origen hasta el destino.
-4. [ ] **Crear las skills en `.opencode/skills/`:** Definir los 3 a 4 especialistas que resolverán cada tramo técnico.
-5. [ ] **Redactar `FLUJO_DE_TRABAJO.md`:** Detallar las fases desde la Fase 0 (auditoría previa) hasta la entrega final, estableciendo el criterio de aprobación de cada compuerta (*Gate*).
+1. [ ] **Definir entradas y salidas:** Qué dispositivo genera datos, qué formato tienen y qué receptor debe recibirlos.
+2. [ ] **Crear documento de recursos:** Listar librerías, estándares de comunicación y herramientas de diagnóstico previas.
+3. [ ] **Trazar el diagrama de flujo:** Seguir el recorrido de un paquete de datos desde su origen hasta cada destino.
+4. [ ] **Establecer las compuertas técnicas:** Definir qué prueba medible marca el cierre de cada fase de desarrollo.
+5. [ ] **Ejecutar en orden:** No pasar a la capa de interfaz o estrés sin haber validado la conectividad base y el transporte de datos.
