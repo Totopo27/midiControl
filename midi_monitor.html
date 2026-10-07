@@ -3,280 +3,755 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIDI & OSC Sentinel Live Monitor</title>
+    <title>MIDI & OSC Sentinel — Stage Control Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0d1117;
-            --card-bg: #161b22;
-            --text: #c9d1d9;
-            --accent: #58a6ff;
-            --note-on: #3fb950;
-            --note-off: #8b949e;
-            --panic: #f85149;
-            --border: #30363d;
+            --bg-deep: #07090e;
+            --bg-surface: #0e121a;
+            --bg-panel: #141923;
+            --bg-panel-hover: #1a202c;
+            
+            --border-subtle: rgba(255, 255, 255, 0.07);
+            --border-focus: rgba(255, 255, 255, 0.18);
+            
+            --text-main: #f0f4fc;
+            --text-muted: #748094;
+            --text-dim: #444d5d;
+            
+            --led-green: #10b981;
+            --led-green-glow: rgba(16, 185, 129, 0.35);
+            --led-amber: #f59e0b;
+            --led-amber-glow: rgba(245, 158, 11, 0.35);
+            --led-red: #ef4444;
+            --led-red-glow: rgba(239, 68, 68, 0.35);
+            --led-blue: #38bdf8;
+            --led-blue-glow: rgba(56, 189, 248, 0.3);
+
+            --accent-cyan: #06b6d4;
+            --panic-red: #dc2626;
+            --panic-hover: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.04) 0%, transparent 60%),
+                linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+            background-size: 100% 100%, 32px 32px, 32px 32px;
         }
 
+        /* --- HEADER & RACK BRANDING --- */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 16px 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
 
-        h1 {
-            margin: 0;
-            font-size: 1.4rem;
-            color: #f0f6fc;
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 14px;
         }
 
-        .stats-bar {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .stat-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border);
+        .rack-badge {
+            background: linear-gradient(135deg, #1f2937, #111827);
+            border: 1px solid var(--border-subtle);
+            padding: 6px 10px;
             border-radius: 6px;
-            padding: 12px 16px;
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            color: var(--note-off);
+            font-family: 'Geist Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            letter-spacing: 1px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
-        .stat-value {
-            font-size: 1.6rem;
-            font-weight: bold;
-            color: var(--accent);
-            margin-top: 4px;
+        .title-group h1 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: var(--text-main);
         }
 
-        .controls {
+        .title-group p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            font-family: 'Geist Mono', monospace;
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .pilot-lamp {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            font-family: 'Geist Mono', monospace;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .led-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background-color: var(--led-green);
+            box-shadow: 0 0 10px var(--led-green-glow);
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 4px var(--led-green)); }
+            50% { opacity: 1; filter: drop-shadow(0 0 8px var(--led-green)); }
+        }
+
+        /* --- DASHBOARD TELEMETRY METERS --- */
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .meter-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .meter-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--border-focus), transparent);
+        }
+
+        .meter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .meter-title {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-family: 'Geist Mono', monospace;
+        }
+
+        .meter-icon {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .meter-value {
+            font-family: 'Geist Mono', monospace;
+            font-size: 2.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -1px;
+            margin: 10px 0 4px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .meter-unit {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        .meter-subtext {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            font-family: 'Geist Mono', monospace;
+        }
+
+        /* --- MIDI CHANNEL MATRIX (LED BUS) --- */
+        .channel-bus-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .bus-label {
+            font-family: 'Geist Mono', monospace;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .channels-grid {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            gap: 8px;
+            width: 100%;
+        }
+
+        .ch-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-subtle);
+            border-radius: 5px;
+            padding: 6px 0;
+            text-align: center;
+            font-family: 'Geist Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            font-weight: 600;
+            transition: all 0.15s ease-out;
+        }
+
+        .ch-box.active {
+            background: rgba(6, 182, 212, 0.15);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.25);
+        }
+
+        /* --- STAGE ACTIONS TOOLBAR --- */
+        .controls-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .action-group {
             display: flex;
             gap: 10px;
-            margin-bottom: 15px;
         }
 
-        button {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 8px 16px;
-            border-radius: 6px;
+        .btn {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-main);
+            padding: 9px 16px;
+            border-radius: 7px;
+            font-family: 'Geist Mono', monospace;
+            font-size: 0.8rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.15s ease;
         }
 
-        button:hover {
-            border-color: var(--accent);
-            color: #f0f6fc;
+        .btn:hover {
+            background: var(--bg-panel-hover);
+            border-color: var(--border-focus);
+            color: #ffffff;
         }
 
-        button.btn-panic {
-            background-color: var(--panic);
-            border-color: var(--panic);
+        .btn-panic {
+            background: linear-gradient(180deg, #dc2626, #b91c1c);
+            border: 1px solid #ef4444;
             color: white;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
         }
 
-        button.btn-panic:hover {
-            background-color: #da3633;
+        .btn-panic:hover {
+            background: linear-gradient(180deg, #ef4444, #dc2626);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+            transform: translateY(-1px);
         }
 
-        .table-container {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 6px;
+        .btn-panic:active {
+            transform: translateY(1px);
+        }
+
+        .indicator-stream {
+            font-family: 'Geist Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pulse-mini {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            box-shadow: 0 0 6px var(--accent-cyan);
+        }
+
+        /* --- REAL-TIME EVENT STREAM TABLE --- */
+        .stream-container {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
             overflow: hidden;
-            max-height: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .stream-header {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stream-header-title {
+            font-family: 'Geist Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .table-viewport {
             overflow-y: auto;
+            max-height: 440px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             text-align: left;
-            font-size: 0.9rem;
+            font-family: 'Geist Mono', monospace;
+            font-size: 0.82rem;
         }
 
         th {
-            background-color: #21262d;
-            padding: 10px 14px;
-            color: #8b949e;
+            background: var(--bg-panel);
+            color: var(--text-muted);
+            padding: 10px 18px;
             font-weight: 600;
-            border-bottom: 1px solid var(--border);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 1px solid var(--border-subtle);
             position: sticky;
             top: 0;
+            z-index: 10;
         }
 
         td {
-            padding: 8px 14px;
-            border-bottom: 1px solid #21262d;
-            font-family: monospace;
+            padding: 9px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
         }
 
-        .badge-on {
-            color: var(--note-on);
-            font-weight: bold;
+        tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.01);
         }
 
-        .badge-off {
-            color: var(--note-off);
+        tr.row-flash {
+            background: rgba(6, 182, 212, 0.12) !important;
+            animation: decay 0.4s ease-out forwards;
+        }
+
+        @keyframes decay {
+            from { background: rgba(6, 182, 212, 0.2); }
+            to { background: transparent; }
+        }
+
+        .badge-type {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-noteon {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .badge-noteoff {
+            background: rgba(116, 128, 148, 0.12);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .latency-pill {
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .latency-fast {
+            color: var(--led-green);
+        }
+
+        .latency-mid {
+            color: var(--led-amber);
+        }
+
+        .latency-high {
+            color: var(--led-red);
+        }
+
+        /* --- FOOTER AT-A-GLANCE --- */
+        footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Geist Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            padding: 6px 8px;
+        }
+
+        /* --- RESPONSIVE DESIGN --- */
+        @media (max-width: 900px) {
+            .telemetry-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .channel-bus-panel {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .channels-grid {
+                grid-template-columns: repeat(8, 1fr);
+            }
         }
     </style>
 </head>
 <body>
+
+    <!-- STAGE RACK HEADER -->
     <header>
-        <div>
-            <h1>MIDI & OSC Sentinel Live Monitor</h1>
-            <span style="font-size: 0.85rem; color: #8b949e;">Supervisión de tráfico en tiempo real y seguridad para directos</span>
+        <div class="brand-block">
+            <div class="rack-badge">RACK 01</div>
+            <div class="title-group">
+                <h1>MIDI & OSC SENTINEL CONSOLE</h1>
+                <p>Universal Microtonal Stage Bridge // Ultra-Low Latency Pipeline</p>
+            </div>
         </div>
-        <div>
-            <button class="btn-panic" onclick="triggerPanic()">PANIC (ALL NOTES OFF)</button>
+        <div class="system-status">
+            <div class="pilot-lamp" id="socket-lamp">
+                <span class="led-dot" id="socket-led"></span>
+                <span id="socket-status">CONECTADO</span>
+            </div>
         </div>
     </header>
 
-    <div class="stats-bar">
-        <div class="stat-card">
-            <div class="stat-label">Total Eventos</div>
-            <div class="stat-value" id="stat-total">0</div>
+    <!-- METERS TELEMETRY DECK -->
+    <section class="telemetry-grid">
+        <div class="meter-card">
+            <div class="meter-header">
+                <span class="meter-title">Total Eventos</span>
+                <span class="meter-icon">⚡</span>
+            </div>
+            <div class="meter-value" id="val-total">0</div>
+            <div class="meter-subtext">Stream continuo Ingesta/Egesta</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Note-On / Note-Off</div>
-            <div class="stat-value" id="stat-notes">0 / 0</div>
+
+        <div class="meter-card">
+            <div class="meter-header">
+                <span class="meter-title">Notas Activas</span>
+                <span class="meter-icon">🎹</span>
+            </div>
+            <div class="meter-value" id="val-active">0</div>
+            <div class="meter-subtext">Polifonía actual en memoria</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Latencia de Despacho</div>
-            <div class="stat-value" id="stat-latency">0.0 µs</div>
+
+        <div class="meter-card">
+            <div class="meter-header">
+                <span class="meter-title">Latencia Media</span>
+                <span class="meter-icon">⏱</span>
+            </div>
+            <div class="meter-value" id="val-latency">0.00<span class="meter-unit">µs</span></div>
+            <div class="meter-subtext">SLA Estricto: &lt; 3000 µs (3.0 ms)</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Estado de Red</div>
-            <div class="stat-value" style="color: #3fb950;" id="stat-ws">Conectando...</div>
+
+        <div class="meter-card">
+            <div class="meter-header">
+                <span class="meter-title">Ruta Hardware</span>
+                <span class="meter-icon">🔌</span>
+            </div>
+            <div class="meter-value" style="font-size: 1.35rem; line-height: 2.1rem; color: var(--accent-cyan);" id="val-target">USB2.0-MIDI</div>
+            <div class="meter-subtext">Bifurcación OSC: UDP 57120</div>
+        </div>
+    </section>
+
+    <!-- 16-CHANNEL MIDI ACTIVITY BUS -->
+    <div class="channel-bus-panel">
+        <span class="bus-label">BUS CANALES (1-16):</span>
+        <div class="channels-grid" id="channels-container">
+            <!-- 16 Canales generados dinámicamente -->
         </div>
     </div>
 
-    <div class="controls">
-        <button onclick="clearLog()">Limpiar Log</button>
-        <button id="btn-pause" onclick="togglePause()">Pausar Scroll</button>
-    </div>
+    <!-- ACTIONS & STREAM CONTROLS -->
+    <section class="controls-toolbar">
+        <div class="action-group">
+            <button class="btn btn-panic" id="btn-panic">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                PANIC (ALL NOTES OFF)
+            </button>
+            <button class="btn" id="btn-pause">
+                <span id="pause-text">PAUSAR VISTA</span>
+            </button>
+            <button class="btn" id="btn-clear">LIMPIAR LOG</button>
+        </div>
+        <div class="indicator-stream">
+            <div class="pulse-mini"></div>
+            <span>FEED EN VIVO // WebSocket 8081</span>
+        </div>
+    </section>
 
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>#ID</th>
-                    <th>Hora</th>
-                    <th>Tipo</th>
-                    <th>Canal</th>
-                    <th>Nota</th>
-                    <th>Velocidad</th>
-                    <th>Latencia</th>
-                </tr>
-            </thead>
-            <tbody id="log-body">
-            </tbody>
-        </table>
-    </div>
+    <!-- EVENT INSPECTION STREAM -->
+    <main class="stream-container">
+        <div class="stream-header">
+            <span class="stream-header-title">INSPECCIÓN DE MENSAJES EN DIRECTO</span>
+            <span style="font-family: 'Geist Mono', monospace; font-size: 0.72rem; color: var(--text-dim);" id="feed-counter">0 ENTRADAS</span>
+        </div>
+        <div class="table-viewport">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 70px;">#ID</th>
+                        <th style="width: 110px;">TIEMPO</th>
+                        <th style="width: 110px;">EVENTO</th>
+                        <th style="width: 70px;">CH</th>
+                        <th style="width: 90px;">NOTA</th>
+                        <th style="width: 80px;">VEL</th>
+                        <th style="width: 130px;">LATENCIA</th>
+                        <th>DESTINO</th>
+                    </tr>
+                </thead>
+                <tbody id="events-tbody">
+                    <!-- Filas renderizadas en tiempo real -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- FOOTER TELEMETRY SPECS -->
+    <footer>
+        <span>ENGINE: JZZ Physical Core + OSC 1.0 Binary Multiplexer</span>
+        <span>ARCH: Pure Non-Blocking Event-Loop // Windows Zero-Drop</span>
+    </footer>
 
     <script>
-        let ws;
-        let totalCount = 0;
-        let noteOnCount = 0;
-        let noteOffCount = 0;
-        let isPaused = false;
-        const maxRows = 50;
-
-        function connectWS() {
-            const host = window.location.hostname || 'localhost';
-            ws = new WebSocket(`ws://${host}:8081`);
-
-            ws.onopen = () => {
-                document.getElementById('stat-ws').textContent = 'CONECTADO';
-                document.getElementById('stat-ws').style.color = '#3fb950';
-            };
-
-            ws.onmessage = (event) => {
-                try {
-                    const msg = JSON.parse(event.data);
-                    if (msg.type === 'telemetry') {
-                        handleTelemetry(msg.data);
-                    }
-                } catch(e) {}
-            };
-
-            ws.onclose = () => {
-                document.getElementById('stat-ws').textContent = 'DESCONECTADO';
-                document.getElementById('stat-ws').style.color = '#f85149';
-                setTimeout(connectWS, 2000);
-            };
+        // Inicializar indicadores de los 16 canales MIDI
+        const chContainer = document.getElementById('channels-container');
+        for (let i = 1; i <= 16; i++) {
+            const chBox = document.createElement('div');
+            chBox.className = 'ch-box';
+            chBox.id = `ch-${i}`;
+            chBox.textContent = `CH${i}`;
+            chContainer.appendChild(chBox);
         }
+
+        // Estado y Métricas
+        let totalCount = 0;
+        let activeNotes = 0;
+        let latencyAccumulator = 0;
+        let isPaused = false;
+        const channelTimers = {};
+
+        const valTotal = document.getElementById('val-total');
+        const valActive = document.getElementById('val-active');
+        const valLatency = document.getElementById('val-latency');
+        const valTarget = document.getElementById('val-target');
+        const tbody = document.getElementById('events-tbody');
+        const feedCounter = document.getElementById('feed-counter');
+        const socketLed = document.getElementById('socket-led');
+        const socketStatus = document.getElementById('socket-status');
+        const btnPause = document.getElementById('btn-pause');
+        const pauseText = document.getElementById('pause-text');
+
+        function triggerChannelLed(chNumber) {
+            const el = document.getElementById(`ch-${chNumber}`);
+            if (!el) return;
+            el.classList.add('active');
+            if (channelTimers[chNumber]) clearTimeout(channelTimers[chNumber]);
+            channelTimers[chNumber] = setTimeout(() => {
+                el.classList.remove('active');
+            }, 300);
+        }
+
+        // Conexión WebSocket al Sentinel
+        const wsHost = window.location.hostname || '127.0.0.1';
+        const ws = new WebSocket(`ws://${wsHost}:8081`);
+
+        ws.onopen = () => {
+            socketLed.style.backgroundColor = 'var(--led-green)';
+            socketLed.style.boxShadow = '0 0 10px var(--led-green-glow)';
+            socketStatus.textContent = 'ONLINE / ENLAZADO';
+        };
+
+        ws.onclose = () => {
+            socketLed.style.backgroundColor = 'var(--led-red)';
+            socketLed.style.boxShadow = '0 0 10px var(--led-red-glow)';
+            socketStatus.textContent = 'DESCONECTADO';
+        };
+
+        ws.onerror = () => {
+            socketLed.style.backgroundColor = 'var(--led-red)';
+            socketStatus.textContent = 'ERROR EN SOCKET';
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const payload = JSON.parse(event.data);
+                if (payload.type === 'telemetry') {
+                    handleTelemetry(payload.data);
+                }
+            } catch (err) {
+                console.error('Error parseando telemetría:', err);
+            }
+        };
 
         function handleTelemetry(data) {
             totalCount++;
-            if (data.event === 'noteon') noteOnCount++;
-            if (data.event === 'noteoff') noteOffCount++;
+            valTotal.textContent = totalCount.toLocaleString();
 
-            document.getElementById('stat-total').textContent = totalCount;
-            document.getElementById('stat-notes').textContent = `${noteOnCount} / ${noteOffCount}`;
-            document.getElementById('stat-latency').textContent = data.durationUs ? `${data.durationUs.toFixed(1)} µs` : 'N/A';
+            if (data.event === 'noteon') {
+                activeNotes++;
+            } else if (data.event === 'noteoff' && activeNotes > 0) {
+                activeNotes--;
+            }
+            valActive.textContent = activeNotes;
+
+            // Iluminar canal
+            if (data.channel) {
+                triggerChannelLed(data.channel);
+            }
+
+            // Calcular latencia
+            if (data.durationUs) {
+                latencyAccumulator = (latencyAccumulator * 0.9) + (data.durationUs * 0.1);
+                valLatency.innerHTML = `${latencyAccumulator.toFixed(1)}<span class="meter-unit">µs</span>`;
+            }
+
+            if (data.midiStatus && data.midiStatus.name) {
+                valTarget.textContent = data.midiStatus.name;
+            }
 
             if (isPaused) return;
 
-            const tbody = document.getElementById('log-body');
-            const row = document.createElement('tr');
-            const isNoteOn = data.event === 'noteon';
-            const badgeClass = isNoteOn ? 'badge-on' : 'badge-off';
+            // Renderizar fila en la tabla
+            const tr = document.createElement('tr');
+            tr.className = 'row-flash';
 
-            row.innerHTML = `
-                <td>${totalCount}</td>
-                <td>${new Date(data.timestamp).toISOString().split('T')[1].replace('Z','')}</td>
-                <td class="${badgeClass}">${data.event.toUpperCase()}</td>
-                <td>${data.channel}</td>
-                <td>${data.note}</td>
-                <td>${data.velocity}</td>
-                <td>${data.durationUs ? data.durationUs.toFixed(1) + ' µs' : '-'}</td>
+            const timeStr = new Date(data.timestamp || Date.now()).toISOString().split('T')[1].replace('Z', '');
+            const isNoteOn = data.event === 'noteon';
+            const badgeClass = isNoteOn ? 'badge-noteon' : 'badge-noteoff';
+
+            const latUs = data.durationUs || 0;
+            let latClass = 'latency-fast';
+            if (latUs > 3000) latClass = 'latency-high';
+            else if (latUs > 1000) latClass = 'latency-mid';
+
+            tr.innerHTML = `
+                <td style="color: var(--text-dim);">#${totalCount}</td>
+                <td>${timeStr}</td>
+                <td><span class="badge-type ${badgeClass}">${data.event.toUpperCase()}</span></td>
+                <td style="font-weight: 600;">${data.channel || 1}</td>
+                <td style="color: var(--text-main); font-weight: 700;">${data.note}</td>
+                <td>${data.velocity !== undefined ? data.velocity : '-'}</td>
+                <td><span class="latency-pill ${latClass}">${latUs.toFixed(1)} µs</span></td>
+                <td style="color: var(--text-muted);">${data.midiStatus?.name || 'USB2.0-MIDI'}</td>
             `;
 
-            tbody.insertBefore(row, tbody.firstChild);
+            tbody.insertBefore(tr, tbody.firstChild);
 
-            if (tbody.children.length > maxRows) {
+            // Mantener máximo 100 filas en el DOM para evitar fugas de memoria y mantener 60fps
+            if (tbody.children.length > 100) {
                 tbody.removeChild(tbody.lastChild);
             }
+            feedCounter.textContent = `${tbody.children.length} ENTRADAS`;
         }
 
-        function triggerPanic() {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'panic' }));
-                console.warn('¡PANIC ENVIADO!');
+        // Botonera de Control
+        document.getElementById('btn-panic').addEventListener('click', () => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'midi', event: 'panic' }));
             }
-        }
+            activeNotes = 0;
+            valActive.textContent = '0';
+        });
 
-        function clearLog() {
-            document.getElementById('log-body').innerHTML = '';
-        }
-
-        function togglePause() {
+        btnPause.addEventListener('click', () => {
             isPaused = !isPaused;
-            document.getElementById('btn-pause').textContent = isPaused ? 'Reanudar Scroll' : 'Pausar Scroll';
-        }
+            pauseText.textContent = isPaused ? 'REANUDAR' : 'PAUSAR VISTA';
+            btnPause.style.borderColor = isPaused ? 'var(--led-amber)' : 'var(--border-subtle)';
+            btnPause.style.color = isPaused ? 'var(--led-amber)' : 'var(--text-main)';
+        });
 
-        connectWS();
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            tbody.innerHTML = '';
+            feedCounter.textContent = '0 ENTRADAS';
+        });
+
+        // Atajos de teclado en el navegador
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'p' || e.key === 'P') {
+                document.getElementById('btn-panic').click();
+            } else if (e.key === ' ') {
+                e.preventDefault();
+                btnPause.click();
+            } else if (e.key === 'c' || e.key === 'C') {
+                document.getElementById('btn-clear').click();
+            }
+        });
     </script>
 </body>
 </html>
