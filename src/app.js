@@ -66,15 +66,25 @@ class LiveSentinelApp {
 
         // 1. Servidor HTTP
         this.httpServer = http.createServer((req, res) => {
-            let filePath = '.' + req.url;
-            if (filePath === './' || filePath === '.') filePath = './midi_monitor.html';
+            // Protección contra Path Traversal: Sanitizar ruta y restringir a archivos públicos permitidos
+            const safePath = path.normalize(req.url.split('?')[0]).replace(/^(\.\.[\/\\])+/, '');
+            let fileName = safePath === '/' || safePath === '\\' ? 'midi_monitor.html' : safePath.replace(/^[\/\\]+/, '');
+            
+            // Lista blanca de archivos públicos permitidos
+            const allowedFiles = ['midi_monitor.html', 'favicon.ico'];
+            if (!allowedFiles.includes(fileName)) {
+                res.writeHead(403, { 'Content-Type': 'text/plain' });
+                return res.end('Acceso denegado: solo archivos públicos autorizados.');
+            }
 
+            const filePath = path.join(__dirname, '..', fileName);
             const extname = String(path.extname(filePath)).toLowerCase();
             const mimeTypes = {
                 '.html': 'text/html',
                 '.js': 'text/javascript',
                 '.css': 'text/css',
-                '.json': 'application/json'
+                '.json': 'application/json',
+                '.ico': 'image/x-icon'
             };
 
             const contentType = mimeTypes[extname] || 'application/octet-stream';
@@ -84,7 +94,11 @@ class LiveSentinelApp {
                     res.writeHead(err.code === 'ENOENT' ? 404 : 500);
                     res.end(`Error: ${err.code}`);
                 } else {
-                    res.writeHead(200, { 'Content-Type': contentType });
+                    res.writeHead(200, { 
+                        'Content-Type': contentType,
+                        'X-Content-Type-Options': 'nosniff',
+                        'X-Frame-Options': 'DENY'
+                    });
                     res.end(content, 'utf-8');
                 }
             });
@@ -103,13 +117,25 @@ class LiveSentinelApp {
 
             ws.on('message', (data) => {
                 try {
+                    // Limitar tamaño de mensaje para prevenir DoS por memoria
+                    if (data.length > 2048) return;
+
                     const msg = JSON.parse(data);
                     if (msg.type === 'midi') {
-                        const ch = msg.channel !== undefined ? (msg.channel - 1) : this.selectedChannel;
+                        const rawCh = parseInt(msg.channel, 10);
+                        const ch = (!isNaN(rawCh) && rawCh >= 1 && rawCh <= 16) ? (rawCh - 1) : this.selectedChannel;
+
+                        const rawNote = parseInt(msg.note, 10);
+                        const rawVel = msg.velocity !== undefined ? parseInt(msg.velocity, 10) : 127;
+
+                        // Validar rango MIDI 1.0 (0-127)
+                        if (isNaN(rawNote) || rawNote < 0 || rawNote > 127) return;
+                        const vel = isNaN(rawVel) ? 127 : Math.max(0, Math.min(127, rawVel));
+
                         if (msg.event === 'noteon') {
-                            this.processor.dispatchNoteOn(ch, msg.note, msg.velocity || 127, msg);
+                            this.processor.dispatchNoteOn(ch, rawNote, vel, msg);
                         } else if (msg.event === 'noteoff') {
-                            this.processor.dispatchNoteOff(ch, msg.note, msg);
+                            this.processor.dispatchNoteOff(ch, rawNote, msg);
                         } else if (msg.event === 'panic') {
                             this.processor.panic();
                         }
@@ -117,7 +143,7 @@ class LiveSentinelApp {
                         this.processor.panic();
                     }
                 } catch (e) {
-                    console.error('[WS ERROR]', e.message);
+                    // Ignorar silenciosamente mensajes malformados sin tumbar el WebSocket
                 }
             });
 
