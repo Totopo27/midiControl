@@ -5,12 +5,14 @@
 const dgram = require('dgram');
 const MidiRouter = require('./router');
 const ShiftEngine = require('./shift_engine');
+const VirtualMidiProxy = require('./virtual_proxy');
 const { encodeOSCMessage } = require('./osc');
 
 class StreamProcessor {
     constructor() {
         this.midiRouter = new MidiRouter();
         this.shiftEngine = new ShiftEngine();
+        this.virtualProxy = new VirtualMidiProxy();
         this.udpClient = dgram.createSocket('udp4');
         this.oscTargets = []; // [{ host, port, pathPrefix }]
         this.listeners = [];  // Callbacks para observadores (monitor / UI)
@@ -68,7 +70,15 @@ class StreamProcessor {
         // Intercepción por el motor Shift (evaluar si es botón Shift o captura MIDI Learn)
         const shiftResult = this.shiftEngine.processHardwareInput(msg);
         if (shiftResult.consumed) {
-            // El evento fue consumido por el motor Shift
+            // Si fue capturado por modo MIDI Learn, notificar a los observadores/UI
+            if (shiftResult.learned) {
+                this.notify({
+                    protocol: 'system',
+                    type: 'midi_learn_captured',
+                    binding: shiftResult.binding,
+                    timestamp: Date.now()
+                });
+            }
             return;
         }
 
@@ -273,8 +283,31 @@ class StreamProcessor {
         return telemetry;
     }
 
+    async enableVirtualProxy(options = {}) {
+        if (options.inPortName) this.virtualProxy.inPortName = options.inPortName;
+        if (options.outPortName) this.virtualProxy.outPortName = options.outPortName;
+        const res = await this.virtualProxy.init();
+        this.virtualProxy.attach(this);
+        return res;
+    }
+
+    dispatchFromVirtualProxy(channel, note, velocity = 127, extraPayload = {}) {
+        const payload = {
+            ...extraPayload,
+            source_route: 'daw_virtual_proxy'
+        };
+        if (velocity > 0) {
+            return this.dispatchNoteOn(channel - 1, note, velocity, payload);
+        } else {
+            return this.dispatchNoteOff(channel - 1, note, payload);
+        }
+    }
+
     panic() {
         this.midiRouter.panic();
+        if (this.virtualProxy) {
+            try { this.virtualProxy.panic(); } catch (_) {}
+        }
         // Disparar /allnotesoff por OSC
         const oscBuffer = encodeOSCMessage('/allnotesoff', '', []);
         for (let i = 0; i < this.oscTargets.length; i++) {
@@ -285,6 +318,9 @@ class StreamProcessor {
 
     close() {
         this.panic();
+        if (this.virtualProxy) {
+            try { this.virtualProxy.close(); } catch (_) {}
+        }
         this.midiRouter.close();
         try { this.udpClient.close(); } catch (e) {}
     }

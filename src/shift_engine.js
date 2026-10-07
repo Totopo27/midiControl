@@ -11,10 +11,8 @@ class ShiftEngine {
         this.maxLayers = options.maxLayers || 2;
         this.mode = options.mode || 'flash'; // 'flash' (momentáneo) o 'toggle' (conmutado)
 
-        // Botón físico asignado como Shift
-        // Identificador: { type: 'note' | 'cc', channel: 1..16, index: 0..127 }
-        this.shiftBinding = options.shiftBinding || null;
         this.isLearning = false;
+        this.learnTarget = null; // metadata opcional del campo a aprender
 
         // StateCache por capa:
         // stateCache[layer] = Map(controlKey -> { type, channel, index, value, rawBytes })
@@ -27,10 +25,11 @@ class ShiftEngine {
     }
 
     /**
-     * Activa o desactiva el modo MIDI Learn para el botón Shift.
+     * Activa o desactiva el modo MIDI Learn para el botón Shift o mapeo general.
      */
-    setMidiLearn(enable = true) {
+    setMidiLearn(enable = true, target = null) {
         this.isLearning = !!enable;
+        this.learnTarget = enable ? target : null;
         return this.isLearning;
     }
 
@@ -87,11 +86,16 @@ class ShiftEngine {
         const index = (type === 'note') ? msg.note : msg.controller;
         const value = (type === 'note') ? (msg.event === 'noteon' ? msg.velocity : 0) : msg.value;
 
-        // 1. Fase MIDI Learn: capturar el primer botón pulsado
+        // 1. Fase MIDI Learn: capturar el primer botón o control activado
         if (this.isLearning && value > 0) {
-            this.setShiftBinding({ type, channel, index });
+            const captured = { type, channel, index, target: this.learnTarget };
+            // Si el target no es personalizado, asigna al shiftBinding por defecto
+            if (!this.learnTarget || this.learnTarget === 'shift') {
+                this.setShiftBinding({ type, channel, index });
+            }
             this.isLearning = false;
-            return { consumed: true, learned: true, binding: this.shiftBinding };
+            this.learnTarget = null;
+            return { consumed: true, learned: true, binding: captured };
         }
 
         // 2. Verificar si coincide con el botón Shift configurado

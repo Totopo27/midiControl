@@ -75,6 +75,18 @@ Fase 3: Monitor de inspección y pánico
        │
 Fase 4: Prueba de estrés y estabilidad
   └── Ráfagas continuas de notas y desconexión/reconexión en caliente.
+       │
+Fase 5: Modo Rendimiento (Bypass UI / Zero-Overhead)
+  └── Desacople de telemetría sin interrupción del flujo MIDI en tiempo real.
+       │
+Fase 6: Matriz de Ruteo Asimétrico y Anti-Loop (MIDI Split)
+  └── Control direccional estricto con aislamiento de retorno por aplicación.
+       │
+Fase 7: Motor Shift & Memoria de Estado de LEDs (StateCache)
+  └── Conmutación de capas con volcado instantáneo de mapa lumínico (< 2 ms).
+       │
+Fase 8: Abstracción de Puertos Virtuales (Virtual Loopback Proxy)
+  └── Intermediación transparente DAW <-> HW sin colisiones de driver WinMM.
 ```
 
 ---
@@ -149,16 +161,6 @@ Fase 4: Prueba de estrés y estabilidad
 
 ---
 
-### Fase 7: Motor Shift & Memoria de Estado de LEDs (StateCache)
-- **Objetivo:** Conmutación de capas físicas de control (*Shift*) con modos Toggle (conmutado) y Flash (momentáneo), soporte de *MIDI Learn*, y memoria de estado de LEDs (`StateCache`) con re-emisión instantánea (<2 ms) al alternar entre capas.
-- **Tareas:**
-  1. Diseñar el módulo `src/shift_engine.js` con soporte multicapa, modos de activación e inspección de ráfaga.
-  2. Integrar el motor Shift en `src/processor.js` para intercepción de entradas y despacho del buffer lumínico hacia el hardware físico.
-  3. Construir la compuerta automatizada de validación (`test_fase7_shift.js`) midiendo latencia de volcado y preservación de estado en 64 controles.
-- **Criterio de aprobación (Gate 7):** Volcado completo del buffer de estados (64 pads simulados) en menos de 2 ms hacia el hardware, funcionamiento riguroso de modos Toggle y Flash, y captura precisa vía MIDI Learn sin fugas de notas.
-
----
-
 ### Fase 7: Motor Shift & Memoria de Estado de LEDs (StateCache - MidiShift)
 - **Objetivo:** Conmutación dinámica de capas físicas (Toggle / Flash) con memoria de estado bidireccional (`StateCache`) para re-emitir en ráfaga el mapa lumínico de LEDs al hardware en menos de 2 ms al cambiar de capa.
 - **Tareas:**
@@ -166,3 +168,14 @@ Fase 4: Prueba de estrés y estabilidad
   2. Integrar el motor de capas con el despacho de hardware y telemetría en `src/processor.js` y `src/app.js`.
   3. Validar con prueba de estrés (`test_fase7_shift.js`) con 64 controles por capa demostrando volcado de estado ultrarrápido (< 2 ms).
 - **Criterio de aprobación (Gate 7):** Volcado completo del buffer de LEDs ejecutado en menos de 2 milisegundos con cero pérdida de paquetes y asignación por MIDI Learn certificada.
+
+---
+
+### Fase 8: Abstracción de Puertos Virtuales (Virtual Loopback Proxy)
+- **Objetivo:** Intermediación transparente multiplataforma (Windows/macOS/Linux) para permitir que DAWs externos (Ableton Live, Reaper, Bitwig, Resolume) envíen y reciban MIDI a través de puertos virtuales sin colisionar con el hardware físico ni disparar errores de exclusividad de driver (MMSYSERR_ALLOCATED en WinMM).
+- **Tareas:**
+  1. Diseñar el módulo `src/virtual_proxy.js` (`VirtualMidiProxy`) con detección de drivers de loopback en el sistema operativo (loopMIDI, IAC, ALSA Through) y motor de puente virtual por software (`JZZ.Widget`).
+  2. Exponer los puertos virtuales transparentes `midiControl Virtual IN` (DAW envía) y `midiControl Virtual OUT` (DAW escucha).
+  3. Enlazar el proxy bidireccionalmente con `src/processor.js` y `src/router.js` para bifurcación paralela (Hardware + OSC) y reenvío de entradas de hardware hacia el DAW.
+  4. Desarrollar la compuerta de validación técnica automatizada (`test_fase8_virtual_proxy.js`) midiendo aislamiento de hardware, latencia y prevención de notas colgadas.
+- **Criterio de aprobación (Gate 8):** DAW externo conectado al puerto virtual proxy sin acceso exclusivo al hardware físico, 100% de integridad en ráfagas bidireccionales (DAW -> HW y HW -> DAW), latencia media de proxy < 1.0 ms (obtenido 5.6 µs), y rutina de pánico con cero notas colgadas (`activeNotes` = 0). APROBADO (PASS).

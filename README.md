@@ -88,7 +88,7 @@ Al arrancar:
 
 ---
 
-## Pruebas de validación
+## Pruebas de validación técnica (Compuertas Binarias)
 
 | Fase | Alcance | Verificación | Resultado |
 | :--- | :--- | :--- | :--- |
@@ -97,6 +97,10 @@ Al arrancar:
 | Fase 2 | Concurrencia MIDI + OSC | 200 eventos simultáneos hacia hardware y red con latencia media de 142 µs. | PASS |
 | Fase 3 | Monitor e inspección | Transmisión de telemetría al dashboard y comando All Notes Off. | PASS |
 | Fase 4 | Prueba de estrés | Ráfaga de 1000 eventos (500 notas en 5 octavas) con 0% pérdida y 0 notas colgadas. | PASS |
+| Fase 5 | Modo Rendimiento (Bypass UI) | Desacople de telemetría sin interrupción del flujo MIDI en tiempo real. | PASS |
+| Fase 6 | Ruteo Asimétrico y Anti-Bucle | Matriz direccional In/Out con aislamiento estricto de retorno por app. | PASS |
+| Fase 7 | Motor Shift & StateCache | Conmutación de capas con volcado de mapa lumínico en 18.9 µs (< 2 ms). | PASS |
+| Fase 8 | Virtual Loopback Proxy | Intermediación transparente DAW <-> HW sin colisiones de driver WinMM. | PASS |
 
 ---
 

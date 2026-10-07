@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDI Shortcut &amp; Mapping Studio - Prototipo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-canvas: #0c0f17;
+            --bg-surface: #141824;
+            --bg-panel: #182030;
+            --bg-panel-elevated: #1e293b;
+            --bg-row-selected: #0284c7;
+            --bg-row-hover: rgba(255, 255, 255, 0.035);
+            --bg-input: #0f1420;
+            
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-active: #06b6d4;
+            
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --accent-green: #10b981;
+            --accent-cyan: #06b6d4;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+
+            --font-ui: 'Plus Jakarta Sans', -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Geist Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- TOP APPS BAR (ESTILO MIDISHORTCUT) --- */
+        .window-header {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 10px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 52px;
+        }
+
+        .device-badge-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .device-dropdown-btn {
+            background-color: var(--accent-green);
+            color: #042f2e;
+            font-weight: 700;
+            font-size: 0.82rem;
+            letter-spacing: 0.06em;
+            padding: 7px 18px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-mono);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+            transition: filter 0.15s ease, transform 0.08s ease;
+        }
+
+        .device-dropdown-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .device-dropdown-btn:active {
+            transform: scale(0.98);
+        }
+
+        .window-title {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-weight: 500;
+        }
+
+        .header-tools {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+
+        .header-tools select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-main);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            outline: none;
+        }
+
+        /* --- CONTENEDOR SPLIT: MASTER-DETAIL --- */
+        .main-workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* --- LADO IZQUIERDO: MASTER TABLE --- */
+        .master-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-subtle);
+            background: var(--bg-canvas);
+            position: relative;
+        }
+
+        .table-container {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: auto;
+        }
+
+        table.mapping-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            text-align: left;
+        }
+
+        table.mapping-table thead {
+            position: sticky;
+            top: 0;
+            background: var(--bg-surface);
+            z-index: 2;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        table.mapping-table th {
+            padding: 10px 14px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.72rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            border-right: 1px solid rgba(255, 255, 255, 0.04);
+            white-space: nowrap;
+        }
+
+        table.mapping-table td {
+            padding: 9px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            border-right: 1px solid rgba(255, 255, 255, 0.02);
+            color: var(--text-main);
+            white-space: nowrap;
+        }
+
+        table.mapping-table tbody tr {
+            cursor: pointer;
+            transition: background-color 0.08s ease;
+        }
+
+        table.mapping-table tbody tr:hover {
+            background-color: var(--bg-row-hover);
+        }
+
+        table.mapping-table tbody tr.selected {
+            background-color: var(--bg-row-selected) !important;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        table.mapping-table tbody tr.selected td {
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .bottom-bar {
+            height: 44px;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+        }
+
+        .btn-add-rule {
+            width: 28px;
+            height: 28px;
+            background: var(--bg-panel-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 5px;
+            color: var(--text-main);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .btn-add-rule:hover {
+            background: var(--accent-cyan);
+            color: #000;
+            border-color: var(--accent-cyan);
+        }
+
+        .status-progress-track {
+            height: 4px;
+            width: 260px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .status-progress-fill {
+            height: 100%;
+            width: 45%;
+            background: var(--accent-cyan);
+            border-radius: 2px;
+        }
+
+        /* --- LADO DERECHO: DETAIL INSPECTOR --- */
+        .detail-inspector {
+            width: 360px;
+            background: var(--bg-surface);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 20px;
+            gap: 18px;
+            overflow-y: auto;
+        }
+
+        .inspector-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .inspector-label {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            min-width: 90px;
+            text-align: right;
+        }
+
+        .inspector-control {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Inputs & Dropdowns */
+        input[type="text"], input[type="number"], select.inspector-select {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-main);
+            padding: 7px 10px;
+            border-radius: 5px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus, select.inspector-select:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 1px var(--accent-cyan);
+        }
+
+        /* Custom Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 38px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #334155;
+            transition: .2s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .2s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-cyan);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(18px);
+        }
+
+        /* LEARN Button */
+        .btn-learn {
+            flex: 1;
+            background: #263044;
+            color: var(--text-main);
+            border: 1px solid var(--border-subtle);
+            border-radius: 5px;
+            padding: 8px 12px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            text-transform: uppercase;
+            text-align: center;
+            transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .btn-learn:hover {
+            background: #334155;
+            border-color: var(--text-secondary);
+        }
+
+        .btn-learn.listening {
+            background: var(--accent-amber);
+            color: #1e1e1e;
+            border-color: var(--accent-amber);
+            animation: pulse-learn 1.2s infinite ease-in-out;
+            font-weight: 700;
+        }
+
+        @keyframes pulse-learn {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(0.99); }
+        }
+
+        /* Shortcut preview display */
+        .shortcut-badge {
+            background: #090d16;
+            border: 1px solid var(--border-subtle);
+            border-radius: 5px;
+            padding: 6px 12px;
+            color: var(--accent-cyan);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            width: 100%;
+            text-align: center;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-live-tag {
+            font-size: 0.65rem;
+            color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-family: var(--font-mono);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP HEADER -->
+    <header class="window-header">
+        <div class="device-badge-selector">
+            <button class="device-dropdown-btn" id="btn-device-select" title="Seleccionar controlador activo">
+                <span>LAUNCHPAD S 2</span>
+                <span style="font-size: 0.65rem;">▼</span>
+            </button>
+            <span class="badge-live-tag">PUERTO VIRTUAL CONECTADO</span>
+        </div>
+
+        <div class="window-title">
+            MIDI &amp; OSC MAPPING STUDIO - [Hexgrid Matrix Engine]
+        </div>
+
+        <div class="header-tools">
+            <span>Hint position:</span>
+            <select id="select-hint">
+                <option value="top-left">Top left</option>
+                <option value="top-right">Top right</option>
+                <option value="bottom-left">Bottom left</option>
+                <option value="bottom-right">Bottom right</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- SPLIT WORKSPACE: MASTER - DETAIL -->
+    <main class="main-workspace">
+        
+        <!-- PANEL IZQUIERDO: TABLA MATRIZ DE REGLAS -->
+        <section class="master-panel">
+            <div class="table-container">
+                <table class="mapping-table" id="table-mappings">
+                    <thead>
+                        <tr>
+                            <th style="width: 45px;">Id</th>
+                            <th>Value</th>
+                            <th>Description</th>
+                            <th>Input Type</th>
+                            <th>Shortcut / Action</th>
+                            <th>Channel</th>
+                            <th>Note / CC</th>
+                            <th>Delay ms</th>
+                            <th>Trigger</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-mappings">
+                        <!-- Las filas se renderizan dinámicamente con JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- BARRA INFERIOR (Acciones de lista) -->
+            <div class="bottom-bar">
+                <button class="btn-add-rule" id="btn-add-row" title="Añadir nueva regla de mapeo">+</button>
+                <div class="status-progress-track">
+                    <div class="status-progress-fill"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANEL DERECHO: INSPECTOR DE DETALLE -->
+        <aside class="detail-inspector" id="inspector-panel">
+            <!-- ENABLED -->
+            <div class="inspector-row">
+                <label class="inspector-label">Enabled</label>
+                <div class="inspector-control" style="justify-content: flex-end;">
+                    <label class="switch">
+                        <input type="checkbox" id="field-enabled" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- INPUT TYPE -->
+            <div class="inspector-row">
+                <label class="inspector-label">Input Type</label>
+                <div class="inspector-control">
+                    <select class="inspector-select" id="field-input-type">
+                        <option value="cc">Midi Control Value (CC)</option>
+                        <option value="note">Note On &amp; Off</option>
+                        <option value="pitchbend">Pitch Bend</option>
+                        <option value="osc">OSC Trigger</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- MIDI LEARN -->
+            <div class="inspector-row">
+                <label class="inspector-label">Midi</label>
+                <div class="inspector-control">
+                    <button class="btn-learn" id="btn-learn-midi">LEARN</button>
+                </div>
+            </div>
+
+            <!-- CHANNEL -->
+            <div class="inspector-row">
+                <label class="inspector-label">Channel</label>
+                <div class="inspector-control">
+                    <input type="number" id="field-channel" min="1" max="16" value="1">
+                </div>
+            </div>
+
+            <!-- NOTE / CC NUMBER -->
+            <div class="inspector-row">
+                <label class="inspector-label" id="label-note-cc">Note / CC</label>
+                <div class="inspector-control">
+                    <input type="number" id="field-note" min="0" max="127" value="118">
+                </div>
+            </div>
+
+            <!-- TRIGGER CONDITION -->
+            <div class="inspector-row">
+                <label class="inspector-label">Trigger</label>
+                <div class="inspector-control">
+                    <select class="inspector-select" id="field-trigger-cond">
+                        <option value="above">Above value:</option>
+                        <option value="below">Below value:</option>
+                        <option value="exact">Exact value:</option>
+                        <option value="toggle">Toggle On/Off</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="inspector-row">
+                <label class="inspector-label">Trigger Val</label>
+                <div class="inspector-control">
+                    <input type="number" id="field-trigger-val" min="0" max="127" value="63">
+                </div>
+            </div>
+
+            <!-- SHORTCUT LEARN -->
+            <div class="inspector-row">
+                <label class="inspector-label">Shortcut</label>
+                <div class="inspector-control">
+                    <button class="btn-learn" id="btn-learn-shortcut">LEARN</button>
+                </div>
+            </div>
+
+            <div class="inspector-row">
+                <label class="inspector-label"></label>
+                <div class="inspector-control">
+                    <div class="shortcut-badge" id="display-shortcut">command + [</div>
+                </div>
+            </div>
+
+            <!-- DELAY MS -->
+            <div class="inspector-row">
+                <label class="inspector-label">Delay ms</label>
+                <div class="inspector-control">
+                    <input type="number" id="field-delay" min="0" max="5000" value="0">
+                </div>
+            </div>
+
+            <!-- MIDI OUT FEEDBACK -->
+            <div class="inspector-row">
+                <label class="inspector-label">Midi Out</label>
+                <div class="inspector-control" style="justify-content: flex-end;">
+                    <label class="switch">
+                        <input type="checkbox" id="field-midi-out">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- DESCRIPTION -->
+            <div class="inspector-row">
+                <label class="inspector-label">Description</label>
+                <div class="inspector-control">
+                    <input type="text" id="field-description" value="Prev Item">
+                </div>
+            </div>
+        </aside>
+
+    </main>
+
+    <script>
+        // ESTADO INICIAL BASADO EN LA CAPTURA MIDISHORTCUT
+        const mappingRules = [
+            { id: 1, value: "", description: "Copy", inputType: "Note On & Off", shortcut: "command + C", channel: 1, note: 73, delay: 0, trigger: "Press", enabled: true, midiOut: false, triggerCond: "exact", triggerVal: 127 },
+            { id: 2, value: "", description: "Paste", inputType: "Note On & Off", shortcut: "command + V", channel: 1, note: 113, delay: 0, trigger: "Press", enabled: true, midiOut: false, triggerCond: "exact", triggerVal: 127 },
+            { id: 3, value: "", description: "A", inputType: "Note On & Off", shortcut: "shift + A", channel: 1, note: 96, delay: 0, trigger: "Press", enabled: true, midiOut: false, triggerCond: "exact", triggerVal: 127 },
+            { id: 4, value: "", description: "B", inputType: "Note On & Off", shortcut: "shift + B", channel: 1, note: 97, delay: 0, trigger: "Press", enabled: true, midiOut: false, triggerCond: "exact", triggerVal: 127 },
+            { id: 5, value: "", description: "Prev Item", inputType: "Midi Control Value (CC)", shortcut: "command + [", channel: 1, note: 118, delay: 0, trigger: "Above value: 63", enabled: true, midiOut: false, triggerCond: "above", triggerVal: 63 },
+            { id: 6, value: "", description: "Next Item", inputType: "Midi Control Value (CC)", shortcut: "command + ]", channel: 1, note: 119, delay: 0, trigger: "Above value: 63", enabled: true, midiOut: false, triggerCond: "above", triggerVal: 63 },
+            { id: 7, value: "", description: "Dock", inputType: "Note On & Off", shortcut: "command + 1", channel: 1, note: 0, delay: 0, trigger: "Press", enabled: true, midiOut: false, triggerCond: "exact", triggerVal: 127 },
+            { id: 8, value: "", description: "Dock", inputType: "Note On & Off", shortcut: "command + 2", channel: 1, note: 1, delay: 0, trigger: "Press", enabled: true, midiOut: false, triggerCond: "exact", triggerVal: 127 },
+            { id: 9, value: "", description: "Letter R", inputType: "Note On & Off", shortcut: "R", channel: 1, note: 1, delay: 0, trigger: "Press", enabled: true, midiOut: false, triggerCond: "exact", triggerVal: 127 },
+            { id: 10, value: "", description: "S", inputType: "Note On & Off", shortcut: "W", channel: 1, note: 1, delay: 0, trigger: "Press", enabled: true, midiOut: false, triggerCond: "exact", triggerVal: 127 },
+            { id: 11, value: "", description: "Dock", inputType: "Note On & Off", shortcut: "command + 1", channel: 1, note: 0, delay: 0, trigger: "Press", enabled: true, midiOut: false, triggerCond: "exact", triggerVal: 127 }
+        ];
+
+        let selectedId = 5; // Regla 5 por defecto seleccionada (Prev Item)
+
+        const tbody = document.getElementById('tbody-mappings');
+        const fieldEnabled = document.getElementById('field-enabled');
+        const fieldInputType = document.getElementById('field-input-type');
+        const fieldChannel = document.getElementById('field-channel');
+        const fieldNote = document.getElementById('field-note');
+        const fieldTriggerCond = document.getElementById('field-trigger-cond');
+        const fieldTriggerVal = document.getElementById('field-trigger-val');
+        const displayShortcut = document.getElementById('display-shortcut');
+        const fieldDelay = document.getElementById('field-delay');
+        const fieldMidiOut = document.getElementById('field-midi-out');
+        const fieldDescription = document.getElementById('field-description');
+        const btnLearnMidi = document.getElementById('btn-learn-midi');
+        const btnLearnShortcut = document.getElementById('btn-learn-shortcut');
+        const btnAddRow = document.getElementById('btn-add-row');
+
+        // RENDERIZADO DE TABLA MASTER
+        function renderTable() {
+            tbody.innerHTML = '';
+            mappingRules.forEach(rule => {
+                const tr = document.createElement('tr');
+                if (rule.id === selectedId) {
+                    tr.classList.add('selected');
+                }
+                tr.onclick = () => selectRule(rule.id);
+
+                tr.innerHTML = `
+                    <td>${rule.id}</td>
+                    <td>${rule.value || ''}</td>
+                    <td>${rule.description}</td>
+                    <td>${rule.inputType}</td>
+                    <td>${rule.shortcut}</td>
+                    <td>${rule.channel}</td>
+                    <td>${rule.note}</td>
+                    <td>${rule.delay}</td>
+                    <td>${rule.trigger}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // SELECCIÓN Y ACTUALIZACIÓN DEL INSPECTOR DE DETALLES
+        function selectRule(id) {
+            selectedId = id;
+            const rule = mappingRules.find(r => r.id === id);
+            if (!rule) return;
+
+            // Poblamos el panel inspector
+            fieldEnabled.checked = rule.enabled;
+            fieldInputType.value = rule.inputType.includes('CC') ? 'cc' : 'note';
+            fieldChannel.value = rule.channel;
+            fieldNote.value = rule.note;
+            fieldTriggerCond.value = rule.triggerCond || 'exact';
+            fieldTriggerVal.value = rule.triggerVal || 127;
+            displayShortcut.textContent = rule.shortcut;
+            fieldDelay.value = rule.delay;
+            fieldMidiOut.checked = rule.midiOut || false;
+            fieldDescription.value = rule.description;
+
+            renderTable();
+        }
+
+        // BINDING DE EDICIÓN DEL INSPECTOR HACIA EL ESTADO
+        function syncInspectorToRule() {
+            const rule = mappingRules.find(r => r.id === selectedId);
+            if (!rule) return;
+
+            rule.enabled = fieldEnabled.checked;
+            rule.inputType = fieldInputType.value === 'cc' ? 'Midi Control Value (CC)' : 'Note On & Off';
+            rule.channel = parseInt(fieldChannel.value) || 1;
+            rule.note = parseInt(fieldNote.value) || 0;
+            rule.triggerCond = fieldTriggerCond.value;
+            rule.triggerVal = parseInt(fieldTriggerVal.value) || 0;
+            rule.trigger = rule.triggerCond === 'above' ? `Above value: ${rule.triggerVal}` : 'Press';
+            rule.shortcut = displayShortcut.textContent;
+            rule.delay = parseInt(fieldDelay.value) || 0;
+            rule.midiOut = fieldMidiOut.checked;
+            rule.description = fieldDescription.value;
+
+            renderTable();
+        }
+
+        // EVENT LISTENERS DE EDICIÓN
+        [fieldEnabled, fieldInputType, fieldChannel, fieldNote, fieldTriggerCond, fieldTriggerVal, fieldDelay, fieldMidiOut, fieldDescription].forEach(el => {
+            el.addEventListener('input', syncInspectorToRule);
+            el.addEventListener('change', syncInspectorToRule);
+        });
+
+        // BOTÓN + PARA AÑADIR FILAS
+        btnAddRow.addEventListener('click', () => {
+            const nextId = mappingRules.length > 0 ? Math.max(...mappingRules.map(r => r.id)) + 1 : 1;
+            mappingRules.push({
+                id: nextId,
+                value: "",
+                description: "New Action",
+                inputType: "Note On & Off",
+                shortcut: "space",
+                channel: 1,
+                note: 60,
+                delay: 0,
+                trigger: "Press",
+                enabled: true,
+                midiOut: false,
+                triggerCond: "exact",
+                triggerVal: 127
+            });
+            selectRule(nextId);
+        });
+
+        // SIMULACIÓN INTERACTIVA DE MIDI LEARN
+        let isLearningMidi = false;
+        btnLearnMidi.addEventListener('click', () => {
+            if (isLearningMidi) return;
+            isLearningMidi = true;
+            btnLearnMidi.classList.add('listening');
+            btnLearnMidi.textContent = "ESCUCHANDO...";
+
+            // Simulación: a los 1.5s recibe un evento MIDI aleatorio simulado
+            setTimeout(() => {
+                const simulatedCC = Math.floor(Math.random() * 60) + 60;
+                fieldChannel.value = 1;
+                fieldNote.value = simulatedCC;
+                fieldInputType.value = 'cc';
+                btnLearnMidi.classList.remove('listening');
+                btnLearnMidi.textContent = "LEARN";
+                isLearningMidi = false;
+                syncInspectorToRule();
+            }, 1400);
+        });
+
+        // SIMULACIÓN DE SHORTCUT LEARN (Captura teclas reales del usuario al clickear)
+        let isLearningShortcut = false;
+        btnLearnShortcut.addEventListener('click', () => {
+            isLearningShortcut = true;
+            btnLearnShortcut.classList.add('listening');
+            btnLearnShortcut.textContent = "PRESIONA TECLA...";
+
+            const handleKeyDown = (e) => {
+                e.preventDefault();
+                const modifiers = [];
+                if (e.metaKey || e.ctrlKey) modifiers.push('ctrl');
+                if (e.altKey) modifiers.push('alt');
+                if (e.shiftKey) modifiers.push('shift');
+
+                let key = e.key.toLowerCase();
+                if (key === 'control' || key === 'alt' || key === 'shift' || key === 'meta') {
+                    return; // Esperar tecla principal
+                }
+
+                const finalCombo = modifiers.length > 0 ? `${modifiers.join(' + ')} + ${key}` : key;
+                displayShortcut.textContent = finalCombo;
+
+                window.removeEventListener('keydown', handleKeyDown);
+                btnLearnShortcut.classList.remove('listening');
+                btnLearnShortcut.textContent = "LEARN";
+                isLearningShortcut = false;
+                syncInspectorToRule();
+            };
+
+            window.addEventListener('keydown', handleKeyDown);
+        });
+
+        // INIT
+        selectRule(5);
+    </script>
+</body>
+</html>

@@ -20,10 +20,11 @@ class MidiRouter {
         // 'app_a':    { allowIn: true, allowOut: true } (DAW con envío y retorno permitido)
         // 'app_b':    { allowIn: true, allowOut: false } (App que recibe de HW pero no puede enviar retorno al HW)
         this.routingMatrix = {
-            hardware: { allowIn: true, allowOut: true },
-            app_a:    { allowIn: true, allowOut: true },
-            app_b:    { allowIn: true, allowOut: false },
-            osc:      { allowIn: true, allowOut: true }
+            hardware:          { allowIn: true, allowOut: true },
+            app_a:             { allowIn: true, allowOut: true },
+            app_b:             { allowIn: true, allowOut: false },
+            daw_virtual_proxy: { allowIn: true, allowOut: true },
+            osc:               { allowIn: true, allowOut: true }
         };
     }
 

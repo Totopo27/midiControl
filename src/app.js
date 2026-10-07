@@ -68,6 +68,7 @@ class LiveSentinelApp {
 
     async start(targetMidi = null, targetOscPort = 57120) {
         await this.processor.init();
+        await this.processor.enableVirtualProxy();
         this.processor.addOscTarget('127.0.0.1', targetOscPort);
 
         const outputs = this.processor.midiRouter.listOutputs();
@@ -162,11 +163,32 @@ class LiveSentinelApp {
 
                     const msg = JSON.parse(data);
 
-                    // COMANDOS DE CONTROL DE DISPOSITIVOS Y MODOS
+                    if (msg.type === 'set_midi_learn') {
+                        // msg: { enabled: true/false, target: 'mapping_field' | 'shift' }
+                        const active = this.processor.shiftEngine.setMidiLearn(!!msg.enabled, msg.target || null);
+                        const reply = JSON.stringify({
+                            type: 'midi_learn_status',
+                            active,
+                            target: this.processor.shiftEngine.learnTarget
+                        });
+                        for (const client of this.webClients) {
+                            if (client.readyState === WebSocket.OPEN) {
+                                client.send(reply);
+                            }
+                        }
+                        return;
+                    }
+
                     if (msg.type === 'get_devices') {
                         this.sendDeviceInventory(ws);
                         ws.send(JSON.stringify({ type: 'bypass_status', enabled: this.isBypass }));
                         ws.send(JSON.stringify({ type: 'routing_matrix', matrix: this.processor.midiRouter.getRoutingMatrix() }));
+                        ws.send(JSON.stringify({ type: 'virtual_proxy_status', status: this.processor.virtualProxy.getStatus() }));
+                        return;
+                    }
+
+                    if (msg.type === 'get_virtual_proxy') {
+                        ws.send(JSON.stringify({ type: 'virtual_proxy_status', status: this.processor.virtualProxy.getStatus() }));
                         return;
                     }
 
@@ -256,7 +278,8 @@ class LiveSentinelApp {
                 outputs,
                 inputs,
                 activeOutput: this.processor.midiRouter.activeOutputName,
-                activeInput: this.processor.midiRouter.activeInputName
+                activeInput: this.processor.midiRouter.activeInputName,
+                virtualProxy: this.processor.virtualProxy ? this.processor.virtualProxy.getStatus() : null
             });
             ws.send(payload);
         } catch (e) {}
