@@ -470,12 +470,12 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
-        /* --- MAPPING MATRIX & DETAIL INSPECTOR (MIDI LEARN) --- */
+        /* --- MAPPING MATRIX & DETAIL INSPECTOR (ESTILO MIDISHORTCUT STUDIO) --- */
         .mapping-workspace {
             display: flex;
             gap: 14px;
             flex: 1;
-            min-height: 440px;
+            min-height: 520px;
         }
 
         .mapping-workspace.hidden {
@@ -499,6 +499,7 @@
             border-top: 1px solid var(--border-hairline);
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 8px;
         }
 
@@ -506,26 +507,31 @@
             background: var(--bg-panel);
             border: 1px solid var(--border-hairline);
             color: var(--text-primary);
-            padding: 4px 10px;
-            border-radius: 4px;
+            padding: 5px 12px;
+            border-radius: 5px;
             font-size: 0.75rem;
             cursor: pointer;
             font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            transition: all 0.15s ease;
         }
         .btn-mini:hover {
             border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
         }
 
+        /* Inspector Lateral MidiShortcut */
         .inspector-card {
-            width: 320px;
+            width: 350px;
             background: var(--bg-surface);
             border: 1px solid var(--border-hairline);
             border-radius: 8px;
-            padding: 16px;
+            padding: 18px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 12px;
             box-shadow: var(--shadow-panel);
+            overflow-y: auto;
         }
 
         .inspector-row {
@@ -540,48 +546,71 @@
             color: var(--text-muted);
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.72rem;
+            min-width: 90px;
         }
 
         .inspector-row input, .inspector-row select {
+            flex: 1;
             background: var(--bg-panel);
             border: 1px solid var(--border-hairline);
             color: var(--text-primary);
-            padding: 5px 8px;
-            border-radius: 4px;
+            padding: 6px 10px;
+            border-radius: 5px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
+            font-size: 0.76rem;
             outline: none;
+            transition: border-color 0.15s ease;
         }
         .inspector-row input:focus, .inspector-row select:focus {
             border-color: var(--accent-cyan);
         }
+
+        /* Switches & Badges */
+        .switch-mini {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 18px;
+        }
+        .switch-mini input { opacity: 0; width: 0; height: 0; }
+        .slider-mini {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--text-dim); transition: .2s; border-radius: 18px;
+        }
+        .slider-mini:before {
+            position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
+            background-color: white; transition: .2s; border-radius: 50%;
+        }
+        .switch-mini input:checked + .slider-mini { background-color: var(--accent-cyan); }
+        .switch-mini input:checked + .slider-mini:before { transform: translateX(16px); }
 
         .btn-learn-cta {
             width: 100%;
             background: var(--bg-panel);
             border: 1px solid var(--border-hairline);
             color: var(--text-primary);
-            padding: 8px;
+            padding: 8px 12px;
             border-radius: 6px;
             font-family: 'JetBrains Mono', monospace;
             font-weight: 700;
-            font-size: 0.78rem;
-            letter-spacing: 0.05em;
+            font-size: 0.75rem;
+            letter-spacing: 0.06em;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
+            text-transform: uppercase;
         }
         .btn-learn-cta:hover {
             border-color: var(--accent-cyan);
             color: var(--accent-cyan);
         }
         .btn-learn-cta.active-learning {
-            background: #b45309;
-            color: #ffffff;
-            border-color: #f59e0b;
+            background: var(--led-amber);
+            color: #141b2b;
+            border-color: var(--led-amber);
             animation: pulse-learn-btn 1.2s infinite;
         }
         @keyframes pulse-learn-btn {
@@ -590,16 +619,17 @@
             100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
         }
 
-        .curve-box-mini {
-            height: 80px;
-            background: #090d16;
+        .shortcut-display-box {
+            background: var(--bg-canvas);
             border: 1px solid var(--border-hairline);
-            border-radius: 4px;
-            position: relative;
-        }
-        .curve-box-mini svg {
-            width: 100%;
-            height: 100%;
+            border-radius: 5px;
+            padding: 6px 10px;
+            color: var(--accent-cyan);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            text-align: center;
+            letter-spacing: 0.05em;
+            font-weight: 600;
         }
 
         /* --- MONITORS WORKSPACE & DATA TABLES --- */
@@ -887,70 +917,64 @@
         </section>
     </main>
 
-    <!-- MAPPING MATRIX & DETAIL INSPECTOR (MIDI LEARN) WORKSPACE -->
+    <!-- MAPPING MATRIX & DETAIL INSPECTOR (ESTILO MIDISHORTCUT STUDIO) -->
     <section class="mapping-workspace hidden" id="panel-mapping">
-        <!-- Tabla Matriz de Mapeo -->
+        <!-- Tabla Matriz de Mapeo Maestro -->
         <div class="matrix-table-wrap">
-            <div class="stream-header">
+            <div class="stream-header" style="justify-content: space-between;">
                 <span class="stream-header-title">CONTROL MAPPING MATRIX (REGLAS ACTIVAS)</span>
-                <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--accent-cyan);" id="mapping-counter">3 REGLAS</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--accent-cyan);" id="mapping-counter">0 REGLAS</span>
             </div>
-            <div class="table-viewport" style="max-height: 400px;">
+            <div class="table-viewport" style="flex: 1;">
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 40px;">ID</th>
-                            <th style="width: 40px;">ACT</th>
-                            <th>TIPO ENTRADA</th>
-                            <th>CH</th>
-                            <th>NOTA/CC</th>
-                            <th>VAL</th>
-                            <th>DESTINO</th>
-                            <th>PATH / DIRECCIÓN</th>
-                            <th>CURVA</th>
+                            <th style="width: 45px;">Id</th>
+                            <th>Value</th>
+                            <th>Description</th>
+                            <th>Input Type</th>
+                            <th>Shortcut / Action</th>
+                            <th>Channel</th>
+                            <th>Note / CC</th>
+                            <th>Delay ms</th>
+                            <th>Trigger</th>
                         </tr>
                     </thead>
                     <tbody id="matrix-rules-tbody">
-                        <tr class="selected" style="background: rgba(6, 182, 212, 0.12); cursor: pointer;">
-                            <td>1</td>
-                            <td style="color: var(--accent-cyan);">●</td>
-                            <td>CC (Fader)</td>
-                            <td>1</td>
-                            <td>1</td>
-                            <td>127</td>
-                            <td>OSC UDP</td>
-                            <td>/layer/1/opacity</td>
-                            <td>Linear</td>
-                        </tr>
-                        <tr style="cursor: pointer;">
-                            <td>2</td>
-                            <td style="color: var(--led-green);">●</td>
-                            <td>Note (Pad)</td>
-                            <td>1</td>
-                            <td>60</td>
-                            <td>100</td>
-                            <td>MIDI Virtual</td>
-                            <td>Ch 2 / Note 60</td>
-                            <td>Toggle</td>
-                        </tr>
+                        <!-- Generado dinámicamente -->
                     </tbody>
                 </table>
             </div>
             <div class="matrix-toolbar">
-                <button class="btn-mini" id="btn-add-rule">+ AGREGAR REGLA</button>
-                <button class="btn-mini" id="btn-del-rule">− ELIMINAR</button>
+                <button class="btn-mini" id="btn-add-rule">+ NUEVA REGLA</button>
+                <button class="btn-mini" id="btn-del-rule" style="color: var(--led-red);">− ELIMINAR</button>
             </div>
         </div>
 
-        <!-- Inspector Lateral & MIDI Learn -->
+        <!-- Inspector Lateral & MidiShortcut Inspector -->
         <div class="inspector-card">
-            <div class="stream-header-title" style="color: var(--accent-cyan); border-bottom: 1px solid var(--border-hairline); padding-bottom: 6px;">
+            <div class="stream-header-title" style="color: var(--accent-cyan); border-bottom: 1px solid var(--border-hairline); padding-bottom: 8px;">
                 INSPECTOR DE REGLA
             </div>
 
             <div class="inspector-row">
-                <label>HABILITADO:</label>
-                <input type="checkbox" id="map-enabled" checked>
+                <label>Enabled</label>
+                <div style="display: flex; justify-content: flex-end; width: 100%;">
+                    <label class="switch-mini">
+                        <input type="checkbox" id="map-enabled" checked>
+                        <span class="slider-mini"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="inspector-row">
+                <label>Input Type</label>
+                <select id="map-input-type">
+                    <option value="cc">Midi Control Value (CC)</option>
+                    <option value="note">Note On &amp; Off</option>
+                    <option value="pitchbend">Pitch Bend</option>
+                    <option value="osc">OSC Trigger</option>
+                </select>
             </div>
 
             <!-- Botón MIDI LEARN Enlazado a WebSocket -->
@@ -960,54 +984,59 @@
             </button>
 
             <div class="inspector-row">
-                <label>TIPO ENTRADA:</label>
-                <select id="map-input-type">
-                    <option value="cc">Control Change (CC)</option>
-                    <option value="note">Midi Note (On/Off)</option>
-                    <option value="pitchbend">Pitch Bend</option>
+                <label>Channel</label>
+                <input type="number" id="map-channel" value="1" min="1" max="16">
+            </div>
+
+            <div class="inspector-row">
+                <label>Note / CC</label>
+                <input type="number" id="map-note-cc" value="118" min="0" max="127">
+            </div>
+
+            <div class="inspector-row">
+                <label>Trigger</label>
+                <select id="map-trigger-cond">
+                    <option value="above">Above value:</option>
+                    <option value="below">Below value:</option>
+                    <option value="exact">Exact value:</option>
+                    <option value="toggle">Toggle On/Off</option>
                 </select>
             </div>
 
             <div class="inspector-row">
-                <label>CANAL MIDI:</label>
-                <input type="number" id="map-channel" value="1" min="1" max="16" style="width: 70px;">
+                <label>Trigger Val</label>
+                <input type="number" id="map-trigger-val" value="63" min="0" max="127">
+            </div>
+
+            <!-- Botón SHORTCUT LEARN (Captura teclas físicas del teclado) -->
+            <button class="btn-learn-cta" id="btn-shortcut-learn">
+                <span>⌨</span>
+                <span id="shortcut-btn-label">SHORTCUT LEARN</span>
+            </button>
+
+            <div class="inspector-row">
+                <label>Shortcut</label>
+                <div class="shortcut-display-box" id="map-shortcut-display" style="width: 100%;">command + [</div>
             </div>
 
             <div class="inspector-row">
-                <label>NOTA / CC:</label>
-                <input type="number" id="map-note-cc" value="1" min="0" max="127" style="width: 70px;">
-            </div>
-
-            <div style="border-top: 1px solid var(--border-hairline); margin: 4px 0;"></div>
-
-            <div class="inspector-row">
-                <label>DESTINO:</label>
-                <select id="map-target-protocol">
-                    <option value="osc">OSC (UDP)</option>
-                    <option value="midi-virtual">MIDI Virtual Loop</option>
-                </select>
+                <label>Delay ms</label>
+                <input type="number" id="map-delay" value="0" min="0" max="5000">
             </div>
 
             <div class="inspector-row">
-                <label>DIRECCIÓN/PATH:</label>
-                <input type="text" id="map-target-path" value="/layer/1/opacity" style="width: 140px;">
+                <label>Midi Out</label>
+                <div style="display: flex; justify-content: flex-end; width: 100%;">
+                    <label class="switch-mini">
+                        <input type="checkbox" id="map-midi-out">
+                        <span class="slider-mini"></span>
+                    </label>
+                </div>
             </div>
 
             <div class="inspector-row">
-                <label>CURVA FADER:</label>
-                <select id="map-curve">
-                    <option value="linear">Lineal</option>
-                    <option value="exp">Exponencial</option>
-                    <option value="log">Logarítmica</option>
-                    <option value="scurve">S-Curve</option>
-                </select>
-            </div>
-
-            <div class="curve-box-mini">
-                <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <line x1="0" y1="100" x2="100" y2="100" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-                    <path id="svg-curve-line" d="M 0 100 L 100 0" fill="none" stroke="var(--accent-cyan)" stroke-width="2"/>
-                </svg>
+                <label>Description</label>
+                <input type="text" id="map-description" value="Prev Item">
             </div>
         </div>
     </section>
@@ -1233,47 +1262,61 @@
         }
 
         // --- 4. WEBSOCKET DE TELEMETRÍA Y CONTROL ---
+        let ws = null;
+        let wsReconnectTimer = null;
         const wsHost = window.location.hostname || '127.0.0.1';
-        const ws = new WebSocket(`ws://${wsHost}:8081`);
 
-        ws.onopen = () => {
-            socketLed.style.backgroundColor = 'var(--led-green)';
-            socketLed.style.boxShadow = '0 0 10px var(--led-green-glow)';
-            socketStatus.textContent = '[ ENLAZADO ]';
-            ws.send(JSON.stringify({ type: 'get_devices' }));
-        };
-
-        ws.onclose = () => {
-            socketLed.style.backgroundColor = 'var(--led-red)';
-            socketLed.style.boxShadow = 'none';
-            socketStatus.textContent = '[ DESCONECTADO ]';
-        };
-
-        ws.onerror = () => {
-            socketLed.style.backgroundColor = 'var(--led-red)';
-            socketStatus.textContent = '[ ERROR SOCKET ]';
-        };
-
-        ws.onmessage = (event) => {
-            try {
-                const payload = JSON.parse(event.data);
-                if (payload.type === 'telemetry') {
-                    if (payload.data && payload.data.type === 'midi_learn_captured') {
-                        handleMidiLearnCaptured(payload.data.binding);
-                    } else {
-                        handleTelemetry(payload.data);
-                    }
-                } else if (payload.type === 'midi_learn_status') {
-                    updateLearnButtonUI(payload.active);
-                } else if (payload.type === 'device_inventory') {
-                    updateDeviceDropdowns(payload);
-                } else if (payload.type === 'bypass_status') {
-                    updateBypassUI(payload.enabled);
-                }
-            } catch (err) {
-                console.error('Error parseando telemetría:', err);
+        function initWebSocket() {
+            if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+                return;
             }
-        };
+
+            ws = new WebSocket(`ws://${wsHost}:8081`);
+
+            ws.onopen = () => {
+                socketLed.style.backgroundColor = 'var(--led-green)';
+                socketLed.style.boxShadow = '0 0 10px var(--led-green-glow)';
+                socketStatus.textContent = '[ ENLAZADO ]';
+                ws.send(JSON.stringify({ type: 'get_devices' }));
+            };
+
+            ws.onclose = () => {
+                socketLed.style.backgroundColor = 'var(--led-red)';
+                socketLed.style.boxShadow = 'none';
+                socketStatus.textContent = '[ REINTENTANDO... ]';
+                clearTimeout(wsReconnectTimer);
+                wsReconnectTimer = setTimeout(initWebSocket, 2000);
+            };
+
+            ws.onerror = () => {
+                socketLed.style.backgroundColor = 'var(--led-red)';
+                socketStatus.textContent = '[ ERROR SOCKET ]';
+                try { ws.close(); } catch(e) {}
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const payload = JSON.parse(event.data);
+                    if (payload.type === 'telemetry') {
+                        if (payload.data && payload.data.type === 'midi_learn_captured') {
+                            handleMidiLearnCaptured(payload.data.binding);
+                        } else {
+                            handleTelemetry(payload.data);
+                        }
+                    } else if (payload.type === 'midi_learn_status') {
+                        updateLearnButtonUI(payload.active);
+                    } else if (payload.type === 'device_inventory') {
+                        updateDeviceDropdowns(payload);
+                    } else if (payload.type === 'bypass_status') {
+                        updateBypassUI(payload.enabled);
+                    }
+                } catch (err) {
+                    console.error('Error parseando telemetría:', err);
+                }
+            };
+        }
+
+        initWebSocket();
 
         function handleMidiLearnCaptured(binding) {
             if (!binding) return;
@@ -1287,6 +1330,10 @@
             if (binding.index !== undefined) mapNoteCc.value = binding.index;
 
             updateLearnButtonUI(false);
+
+            if (typeof syncInspectorToCurrentRule === 'function') {
+                syncInspectorToCurrentRule();
+            }
 
             // Destello visual de confirmación en el inspector
             btnMidiLearn.style.backgroundColor = 'var(--led-green)';
@@ -1407,6 +1454,176 @@
                 ws.send(JSON.stringify({ type: 'set_bypass', enabled: !isBypass }));
             }
         });
+
+        // --- 6. GESTIÓN INTEGRAL DE LA PESTAÑA MAPPING MATRIX (ESTILO MIDISHORTCUT) ---
+        const matrixRulesTbody = document.getElementById('matrix-rules-tbody');
+        const mappingCounter = document.getElementById('mapping-counter');
+        const mapEnabled = document.getElementById('map-enabled');
+        const mapTriggerCond = document.getElementById('map-trigger-cond');
+        const mapTriggerVal = document.getElementById('map-trigger-val');
+        const btnShortcutLearn = document.getElementById('btn-shortcut-learn');
+        const shortcutBtnLabel = document.getElementById('shortcut-btn-label');
+        const mapShortcutDisplay = document.getElementById('map-shortcut-display');
+        const mapDelay = document.getElementById('map-delay');
+        const mapMidiOut = document.getElementById('map-midi-out');
+        const mapDescription = document.getElementById('map-description');
+        const btnAddRule = document.getElementById('btn-add-rule');
+        const btnDelRule = document.getElementById('btn-del-rule');
+
+        let mappingRules = [
+            { id: 1, value: "", description: "Copy", inputType: "Note On & Off", shortcut: "command + C", channel: 1, note: 73, delay: 0, trigger: "Press", enabled: true, midiOut: false, triggerCond: "exact", triggerVal: 127 },
+            { id: 2, value: "", description: "Paste", inputType: "Note On & Off", shortcut: "command + V", channel: 1, note: 113, delay: 0, trigger: "Press", enabled: true, midiOut: false, triggerCond: "exact", triggerVal: 127 },
+            { id: 3, value: "", description: "A", inputType: "Note On & Off", shortcut: "shift + A", channel: 1, note: 96, delay: 0, trigger: "Press", enabled: true, midiOut: false, triggerCond: "exact", triggerVal: 127 },
+            { id: 4, value: "", description: "B", inputType: "Note On & Off", shortcut: "shift + B", channel: 1, note: 97, delay: 0, trigger: "Press", enabled: true, midiOut: false, triggerCond: "exact", triggerVal: 127 },
+            { id: 5, value: "", description: "Prev Item", inputType: "Midi Control Value (CC)", shortcut: "command + [", channel: 1, note: 118, delay: 0, trigger: "Above value: 63", enabled: true, midiOut: false, triggerCond: "above", triggerVal: 63 },
+            { id: 6, value: "", description: "Next Item", inputType: "Midi Control Value (CC)", shortcut: "command + ]", channel: 1, note: 119, delay: 0, trigger: "Above value: 63", enabled: true, midiOut: false, triggerCond: "above", triggerVal: 63 },
+            { id: 7, value: "", description: "Dock", inputType: "Note On & Off", shortcut: "command + 1", channel: 1, note: 0, delay: 0, trigger: "Press", enabled: true, midiOut: false, triggerCond: "exact", triggerVal: 127 }
+        ];
+
+        let selectedRuleId = 5;
+
+        function renderMappingMatrix() {
+            if (!matrixRulesTbody) return;
+            matrixRulesTbody.innerHTML = '';
+            mappingRules.forEach(rule => {
+                const tr = document.createElement('tr');
+                if (rule.id === selectedRuleId) {
+                    tr.classList.add('selected');
+                    tr.style.backgroundColor = 'var(--bg-panel-hover)';
+                    tr.style.borderLeft = '3px solid var(--accent-cyan)';
+                } else {
+                    tr.style.borderLeft = '3px solid transparent';
+                }
+                tr.style.cursor = 'pointer';
+                tr.onclick = () => selectMappingRule(rule.id);
+
+                tr.innerHTML = `
+                    <td style="color: var(--text-muted); font-weight: 700;">${rule.id}</td>
+                    <td>${rule.value || '-'}</td>
+                    <td style="color: var(--text-primary); font-weight: 600;">${rule.description}</td>
+                    <td style="color: ${rule.inputType.includes('CC') ? 'var(--accent-cyan)' : 'var(--accent-violet)'};">${rule.inputType}</td>
+                    <td style="color: var(--led-green); font-weight: 600; font-family: 'JetBrains Mono', monospace;">${rule.shortcut}</td>
+                    <td style="font-weight: 600;">${rule.channel}</td>
+                    <td style="font-weight: 700; color: var(--accent-cyan);">${rule.note}</td>
+                    <td style="color: var(--text-muted);">${rule.delay}</td>
+                    <td style="color: var(--text-secondary);">${rule.trigger}</td>
+                `;
+                matrixRulesTbody.appendChild(tr);
+            });
+            if (mappingCounter) mappingCounter.textContent = `${mappingRules.length} REGLAS`;
+        }
+
+        function selectMappingRule(id) {
+            selectedRuleId = id;
+            const rule = mappingRules.find(r => r.id === id);
+            if (!rule) return;
+
+            mapEnabled.checked = rule.enabled;
+            mapInputType.value = rule.inputType.includes('CC') ? 'cc' : 'note';
+            mapChannel.value = rule.channel;
+            mapNoteCc.value = rule.note;
+            mapTriggerCond.value = rule.triggerCond || 'exact';
+            mapTriggerVal.value = rule.triggerVal || 127;
+            mapShortcutDisplay.textContent = rule.shortcut;
+            mapDelay.value = rule.delay;
+            mapMidiOut.checked = rule.midiOut || false;
+            mapDescription.value = rule.description;
+
+            renderMappingMatrix();
+        }
+
+        function syncInspectorToCurrentRule() {
+            const rule = mappingRules.find(r => r.id === selectedRuleId);
+            if (!rule) return;
+
+            rule.enabled = mapEnabled.checked;
+            rule.inputType = mapInputType.value === 'cc' ? 'Midi Control Value (CC)' : 'Note On & Off';
+            rule.channel = parseInt(mapChannel.value, 10) || 1;
+            rule.note = parseInt(mapNoteCc.value, 10) || 0;
+            rule.triggerCond = mapTriggerCond.value;
+            rule.triggerVal = parseInt(mapTriggerVal.value, 10) || 0;
+            rule.trigger = rule.triggerCond === 'above' ? `Above value: ${rule.triggerVal}` : 'Press';
+            rule.shortcut = mapShortcutDisplay.textContent;
+            rule.delay = parseInt(mapDelay.value, 10) || 0;
+            rule.midiOut = mapMidiOut.checked;
+            rule.description = mapDescription.value;
+
+            renderMappingMatrix();
+        }
+
+        [mapEnabled, mapInputType, mapChannel, mapNoteCc, mapTriggerCond, mapTriggerVal, mapDelay, mapMidiOut, mapDescription].forEach(el => {
+            if (el) {
+                el.addEventListener('input', syncInspectorToCurrentRule);
+                el.addEventListener('change', syncInspectorToCurrentRule);
+            }
+        });
+
+        if (btnAddRule) {
+            btnAddRule.addEventListener('click', () => {
+                const nextId = mappingRules.length > 0 ? Math.max(...mappingRules.map(r => r.id)) + 1 : 1;
+                mappingRules.push({
+                    id: nextId,
+                    value: "",
+                    description: "Nueva Acción",
+                    inputType: "Note On & Off",
+                    shortcut: "space",
+                    channel: 1,
+                    note: 60,
+                    delay: 0,
+                    trigger: "Press",
+                    enabled: true,
+                    midiOut: false,
+                    triggerCond: "exact",
+                    triggerVal: 127
+                });
+                selectMappingRule(nextId);
+            });
+        }
+
+        if (btnDelRule) {
+            btnDelRule.addEventListener('click', () => {
+                if (mappingRules.length <= 1) return;
+                mappingRules = mappingRules.filter(r => r.id !== selectedRuleId);
+                selectMappingRule(mappingRules[0].id);
+            });
+        }
+
+        // CAPTURA DE SHORTCUT LEARN EN INSPECTOR
+        let isLearningShortcut = false;
+        if (btnShortcutLearn) {
+            btnShortcutLearn.addEventListener('click', () => {
+                isLearningShortcut = true;
+                btnShortcutLearn.classList.add('active-learning');
+                shortcutBtnLabel.textContent = "PRESIONA TECLA...";
+
+                const handleKeyDown = (e) => {
+                    e.preventDefault();
+                    const modifiers = [];
+                    if (e.metaKey || e.ctrlKey) modifiers.push('ctrl');
+                    if (e.altKey) modifiers.push('alt');
+                    if (e.shiftKey) modifiers.push('shift');
+
+                    let key = e.key.toLowerCase();
+                    if (key === 'control' || key === 'alt' || key === 'shift' || key === 'meta') {
+                        return; // Espera la tecla principal
+                    }
+
+                    const finalCombo = modifiers.length > 0 ? `${modifiers.join(' + ')} + ${key}` : key;
+                    mapShortcutDisplay.textContent = finalCombo;
+
+                    window.removeEventListener('keydown', handleKeyDown);
+                    btnShortcutLearn.classList.remove('active-learning');
+                    shortcutBtnLabel.textContent = "SHORTCUT LEARN";
+                    isLearningShortcut = false;
+                    syncInspectorToCurrentRule();
+                };
+
+                window.addEventListener('keydown', handleKeyDown);
+            });
+        }
+
+        // Inicializar vista Mapping Matrix
+        selectMappingRule(5);
 
         // --- 5. ACCIONES & TECLADO ---
         document.getElementById('btn-panic').addEventListener('click', () => {

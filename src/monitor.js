@@ -22,7 +22,7 @@ class TerminalMonitor {
 
     logEvent(event) {
         if (this.isBypass) return; // Zero-Overhead: En bypass no procesa ni acumula nada
-        if (event.protocol === 'osc') return; // TerminalMonitor es solo para eventos MIDI
+        if (event.protocol === 'osc' || event.protocol === 'system') return; // TerminalMonitor es solo para eventos MIDI de interpretación
 
         this.totalCount++;
         if (event.event === 'noteon') {

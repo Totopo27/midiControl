@@ -811,27 +811,6 @@
             selectRule(nextId);
         });
 
-        // SIMULACIÓN INTERACTIVA DE MIDI LEARN
-        let isLearningMidi = false;
-        btnLearnMidi.addEventListener('click', () => {
-            if (isLearningMidi) return;
-            isLearningMidi = true;
-            btnLearnMidi.classList.add('listening');
-            btnLearnMidi.textContent = "ESCUCHANDO...";
-
-            // Simulación: a los 1.5s recibe un evento MIDI aleatorio simulado
-            setTimeout(() => {
-                const simulatedCC = Math.floor(Math.random() * 60) + 60;
-                fieldChannel.value = 1;
-                fieldNote.value = simulatedCC;
-                fieldInputType.value = 'cc';
-                btnLearnMidi.classList.remove('listening');
-                btnLearnMidi.textContent = "LEARN";
-                isLearningMidi = false;
-                syncInspectorToRule();
-            }, 1400);
-        });
-
         // SIMULACIÓN DE SHORTCUT LEARN (Captura teclas reales del usuario al clickear)
         let isLearningShortcut = false;
         btnLearnShortcut.addEventListener('click', () => {
@@ -868,32 +847,129 @@
         selectRule(5);
 
         // --- SUBMENÚ DE DISPOSITIVOS HARDWARE DISPONIBLES ---
-        const hardwareDevices = [
-            { id: "launchpad_s2", name: "LAUNCHPAD S 2", port: "USB Audio Device (Port 1)", isDefault: true },
-            { id: "arturia_minilab", name: "Arturia MiniLab 3", port: "MIDIIN2 (MiniLab 3 MIDI)", isDefault: false },
-            { id: "loopmidi_proxy", name: "Hexgrid Virtual Proxy", port: "Virtual Internal Bus", isDefault: false },
-            { id: "akai_apc40", name: "Akai APC40 mkII", port: "USB MIDI Port 1", isDefault: false },
-            { id: "korg_nanokontrol", name: "Korg nanoKONTROL2", port: "SLIDER/KNOB Bus", isDefault: false }
-        ];
-
-        let currentActiveDevice = hardwareDevices[0];
+        let hardwareDevices = [];
+        let currentActiveDevice = null;
 
         const btnDeviceSelect = document.getElementById('btn-device-select');
         const activeDeviceName = document.getElementById('active-device-name');
+        const deviceStatusTag = document.getElementById('device-status-tag');
         const deviceMenuDropdown = document.getElementById('device-menu-dropdown');
         const deviceMenuList = document.getElementById('device-menu-list');
+        const btnRefreshHardware = document.getElementById('btn-refresh-hardware');
+
+        // --- ENLACE WEBSOCKET CON EL SERVIDOR DE TELEMETRÍA Y CONTROL (PORT 8081) ---
+        let ws = null;
+        let wsConnected = false;
+        let isLearningMidi = false;
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.hostname || 'localhost';
+            const wsUrl = `${protocol}//${host}:8081`;
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                wsConnected = true;
+                deviceStatusTag.textContent = "ENLAZADO // WS 8081";
+                deviceStatusTag.style.color = "var(--accent-green)";
+                deviceStatusTag.style.borderColor = "rgba(16, 185, 129, 0.4)";
+                // Solicitar inventario inicial de dispositivos al conectar
+                ws.send(JSON.stringify({ type: 'get_devices' }));
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+
+                    // 1. INVENTARIO DE HARDWARE EN TIEMPO REAL
+                    if (msg.type === 'device_inventory') {
+                        updateHardwareInventory(msg);
+                    }
+
+                    // 2. RESPUESTA O ACTIVACIÓN DE MIDI LEARN
+                    if (msg.type === 'midi_learn_status') {
+                        isLearningMidi = !!msg.active;
+                        updateLearnButtonUI();
+                    }
+
+                    // 3. CAPTURA DE EVENTO MIDI EN VIVO (TELEMETRÍA)
+                    if (msg.type === 'telemetry' && msg.data) {
+                        handleLiveMidiEvent(msg.data);
+                    }
+                } catch (e) {
+                    console.error("Error al procesar mensaje WebSocket:", e);
+                }
+            };
+
+            ws.onclose = () => {
+                wsConnected = false;
+                deviceStatusTag.textContent = "DESCONECTADO // REINTENTANDO";
+                deviceStatusTag.style.color = "var(--accent-amber)";
+                deviceStatusTag.style.borderColor = "rgba(245, 158, 11, 0.4)";
+                setTimeout(connectWebSocket, 2000);
+            };
+
+            ws.onerror = () => {
+                ws.close();
+            };
+        }
+
+        function updateHardwareInventory(inv) {
+            const rawInputs = inv.inputs || [];
+            const rawOutputs = inv.outputs || [];
+
+            hardwareDevices = [];
+
+            // Añadir entradas detectadas
+            rawInputs.forEach((item, idx) => {
+                hardwareDevices.push({
+                    id: `in_${idx}`,
+                    name: item.name || item,
+                    port: `Entrada MIDI [${item.index !== undefined ? item.index : idx}]`,
+                    type: 'input'
+                });
+            });
+
+            // Añadir proxy virtual si está activo
+            if (inv.virtualProxy && inv.virtualProxy.active) {
+                hardwareDevices.push({
+                    id: 'virtual_proxy',
+                    name: inv.virtualProxy.portName || "Hexgrid Virtual Proxy",
+                    port: "Bus Virtual de Retorno",
+                    type: 'virtual'
+                });
+            }
+
+            // Si no hay ninguno, fallback informativo
+            if (hardwareDevices.length === 0) {
+                hardwareDevices.push({
+                    id: 'none',
+                    name: "Sin controladores físicos",
+                    port: "Conecta un dispositivo USB o loopMIDI",
+                    type: 'none'
+                });
+            }
+
+            if (!currentActiveDevice || !hardwareDevices.find(d => d.name === currentActiveDevice.name)) {
+                currentActiveDevice = hardwareDevices[0];
+                activeDeviceName.textContent = currentActiveDevice.name;
+            }
+
+            renderHardwareMenu();
+        }
 
         function renderHardwareMenu() {
             deviceMenuList.innerHTML = '';
             hardwareDevices.forEach(dev => {
                 const li = document.createElement('li');
-                li.className = 'device-menu-item' + (dev.id === currentActiveDevice.id ? ' active' : '');
+                li.className = 'device-menu-item' + (currentActiveDevice && dev.id === currentActiveDevice.id ? ' active' : '');
                 li.innerHTML = `
                     <div class="device-item-info">
                         <span class="device-item-name">${dev.name}</span>
                         <span class="device-item-port">${dev.port}</span>
                     </div>
-                    ${dev.id === currentActiveDevice.id ? '<span class="device-badge-active-dot"></span>' : ''}
+                    ${currentActiveDevice && dev.id === currentActiveDevice.id ? '<span class="device-badge-active-dot"></span>' : ''}
                 `;
                 li.onclick = (e) => {
                     e.stopPropagation();
@@ -908,6 +984,10 @@
             activeDeviceName.textContent = dev.name;
             deviceMenuDropdown.classList.remove('open');
             renderHardwareMenu();
+
+            if (wsConnected && dev.type === 'input') {
+                ws.send(JSON.stringify({ type: 'set_midi_input', device: dev.name }));
+            }
         }
 
         btnDeviceSelect.addEventListener('click', (e) => {
@@ -915,13 +995,63 @@
             deviceMenuDropdown.classList.toggle('open');
         });
 
+        if (btnRefreshHardware) {
+            btnRefreshHardware.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (wsConnected) {
+                    ws.send(JSON.stringify({ type: 'get_devices' }));
+                }
+            });
+        }
+
         document.addEventListener('click', (e) => {
             if (!deviceMenuDropdown.contains(e.target) && e.target !== btnDeviceSelect) {
                 deviceMenuDropdown.classList.remove('open');
             }
         });
 
-        renderHardwareMenu();
+        // --- MANEJO DE EVENTOS MIDI REALES (AUTO-POBLACIÓN DE MIDI LEARN) ---
+        function handleLiveMidiEvent(midi) {
+            // Si el botón MIDI LEARN está activo, capturamos el evento real entrante
+            if (isLearningMidi) {
+                const detectedCh = (midi.channel !== undefined ? midi.channel + 1 : 1);
+                const detectedVal = midi.note !== undefined ? midi.note : (midi.cc || 0);
+                const isCC = midi.event === 'controlchange' || midi.type === 'cc';
+
+                fieldChannel.value = detectedCh;
+                fieldNote.value = detectedVal;
+                fieldInputType.value = isCC ? 'cc' : 'note';
+
+                // Desactivar MIDI LEARN una vez capturado
+                isLearningMidi = false;
+                if (wsConnected) {
+                    ws.send(JSON.stringify({ type: 'set_midi_learn', enabled: false }));
+                }
+                updateLearnButtonUI();
+                syncInspectorToRule();
+            }
+        }
+
+        function updateLearnButtonUI() {
+            if (isLearningMidi) {
+                btnLearnMidi.classList.add('listening');
+                btnLearnMidi.textContent = "ESCUCHANDO...";
+            } else {
+                btnLearnMidi.classList.remove('listening');
+                btnLearnMidi.textContent = "LEARN";
+            }
+        }
+
+        btnLearnMidi.addEventListener('click', () => {
+            isLearningMidi = !isLearningMidi;
+            updateLearnButtonUI();
+            if (wsConnected) {
+                ws.send(JSON.stringify({ type: 'set_midi_learn', enabled: isLearningMidi, target: 'shortcut_studio' }));
+            }
+        });
+
+        // Conectar al socket al cargar
+        connectWebSocket();
     </script>
 </body>
 </html>

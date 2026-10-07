@@ -109,7 +109,7 @@ class LiveSentinelApp {
             let fileName = safePath === '/' || safePath === '\\' ? 'midi_monitor.html' : safePath.replace(/^[\/\\]+/, '');
             
             // Lista blanca de archivos públicos permitidos
-            const allowedFiles = ['midi_monitor.html', 'favicon.ico'];
+            const allowedFiles = ['midi_monitor.html', 'midi_shortcut_studio.html', 'favicon.ico'];
             if (!allowedFiles.includes(fileName)) {
                 res.writeHead(403, { 'Content-Type': 'text/plain' });
                 return res.end('Acceso denegado: solo archivos públicos autorizados.');
