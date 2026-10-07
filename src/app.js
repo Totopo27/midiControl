@@ -254,6 +254,15 @@ class LiveSentinelApp {
                         }
                     } else if (msg.type === 'panic') {
                         this.processor.panic();
+                    } else if (msg.type === 'osc') {
+                        try {
+                            const oscBuf = Buffer.from(msg.message);
+                            const targetIp = msg.ip || '127.0.0.1';
+                            const targetPort = msg.port || 57120;
+                            this.processor.udpClient.send(oscBuf, 0, oscBuf.length, targetPort, targetIp);
+                        } catch (err) {
+                            console.error('[App] Error re-enviando paquete OSC nativo:', err);
+                        }
                     }
                 } catch (e) {
                     // Ignorar silenciosamente mensajes malformados sin tumbar el WebSocket
