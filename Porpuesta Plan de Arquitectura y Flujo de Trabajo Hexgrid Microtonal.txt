@@ -1,0 +1,23 @@
+Solicitud de diseño de Plan de Arquitectura y Flujo de Trabajo
+
+Explicación previa:
+
+Tal y como se especifica en el respectivo README.md, el proyecto /Users/byron/Documents/tecladosXen/wilson-t41-hex-keyboard-main/hexgrid-workspace levanta en terminal con la serie de comandos:
+`cd ruta/a/hexgrid-workspace`
+python3 -m http.server
+
+y luego, 
+`cd ruta/a/hexgrid-workspace`
+`./run_bridge_mac.sh`
+Una vez arrancados estos procesos, si el iPad está conectada a la misma red Wi-Fi, solamente se ingresa en un navegador web del iPad la dirección http://192.168.100.56:3000 (o la que indique la terminal). Una vez abierta la aplicación web, dentro del teclado Wilson respectivo se debe indicar, en el panel OSC Connection, la target IP, que corresponde a 192.168.100.56 en el ejemplo actual. Esto permite accionar notas en cualquier aplicación o sintetizador de la computadora que escuche el envío de datos OSC desde el iPad (por ejemplo, SuperCollider).
+
+Problema y propuesta:
+
+Sin embargo, el proyecto no tiene implementado el envío de datos que cumpla con el protocolo MIDI.
+Es necesario agregar una función, paralela al envío de datos OSC, que envíe mensajes de note-on y note-off MIDI, por el canal MIDI que seleccione el usuario. Este envío debería realizarse principalmente por cable USB (desde el iPad hacia la computadora), mas no debería ignorar la posibilidad de hacer el envío de manera inalámbrica vía Wi-Fi, todo esto sin interferir con las funciones OSC ya implementadas.
+La interfaz MIDI debe recibir los datos y enviarlos, por medio de un puerto MIDI DIN Out, hacia otro dispositivo MIDI. En este caso, se está utilizando el módulo µTune de Tubbutec, el cual administra archivos scala (SCL) y keyboard mapping (KBM) y cuantiza el voltaje de salida para crear afinaciones microtonales en sintetizadores analógicos eurorack.
+Una vez recibidos los datos en la computadora, debe haber una opción de monitorización de entrada y salida de datos MIDI.
+
+Objetivo:
+
+El objetivo es crear música microtonal en vivo con sintetizadores eurorack y poder controlarlos en vivo con los teclados Wilson desde el iPad en lugar de utilizar un controlador MIDI convencional. La conexión debe ser estable, sin latencia perceptible, y confiable, ya que no puede fallar en un concierto en vivo
