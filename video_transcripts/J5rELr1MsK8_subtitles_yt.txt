@@ -1,0 +1,25 @@
+[00:01] welcome to this tutorial about midi
+[00:03] split
+[00:05] midi split allows you to easily connect
+[00:07] a single midi device to different
+[00:09] applications at the same time
+[00:11] by simply starting the app two new
+[00:14] virtual midi devices will be created
+[00:16] device a and b
+[00:18] select the physical device you want to
+[00:19] connect to with the drop down device
+[00:21] picker right next to that you'll find
+[00:24] the routing buttons
+[00:25] these buttons control the data flow for
+[00:28] instance in this situation all data from
+[00:31] the device will be routed to amb but
+[00:34] only the data from the application
+[00:36] connected to a will flow back to the
+[00:38] device
+[00:39] this will help you to prevent
+[00:40] conflicting behavior
+[00:42] with the four in and out buttons you can
+[00:44] make any routing combination thanks for
+[00:46] watching this tutorial
+[00:48] don't forget to subscribe
+[01:02] you

@@ -1,0 +1,567 @@
+[
+  {
+    "start": 1.839,
+    "duration": 3.761,
+    "text": "hey welcome to this tutorial about midi"
+  },
+  {
+    "start": 4.64,
+    "duration": 2.56,
+    "text": "shift"
+  },
+  {
+    "start": 5.6,
+    "duration": 3.6,
+    "text": "today i'm going to show you how the"
+  },
+  {
+    "start": 7.2,
+    "duration": 5.2,
+    "text": "application works so"
+  },
+  {
+    "start": 9.2,
+    "duration": 6.0,
+    "text": "midi shift is a cool little program"
+  },
+  {
+    "start": 12.4,
+    "duration": 4.0,
+    "text": "that instantly doubles the amount of"
+  },
+  {
+    "start": 15.2,
+    "duration": 3.919,
+    "text": "midi devices you have"
+  },
+  {
+    "start": 16.4,
+    "duration": 3.76,
+    "text": "so we're just giving up one button on"
+  },
+  {
+    "start": 19.119,
+    "duration": 4.561,
+    "text": "your device"
+  },
+  {
+    "start": 20.16,
+    "duration": 7.359,
+    "text": "um we're able to make like two"
+  },
+  {
+    "start": 23.68,
+    "duration": 5.519,
+    "text": "virtual devices um and switch the output"
+  },
+  {
+    "start": 27.519,
+    "duration": 5.961,
+    "text": "of your device between those"
+  },
+  {
+    "start": 29.199,
+    "duration": 8.481,
+    "text": "virtual outputs i'm at this little"
+  },
+  {
+    "start": 33.48,
+    "duration": 7.16,
+    "text": "scheme so you can see how it works"
+  },
+  {
+    "start": 37.68,
+    "duration": 5.12,
+    "text": "so your midi device in this case i have"
+  },
+  {
+    "start": 40.64,
+    "duration": 5.04,
+    "text": "an apc 4d setup"
+  },
+  {
+    "start": 42.8,
+    "duration": 4.64,
+    "text": "uh it's gonna connect with uh midi shift"
+  },
+  {
+    "start": 45.68,
+    "duration": 5.039,
+    "text": "and midi shift is gonna create"
+  },
+  {
+    "start": 47.44,
+    "duration": 6.799,
+    "text": "two virtual ports um"
+  },
+  {
+    "start": 50.719,
+    "duration": 7.201,
+    "text": "and by toggling the shift button"
+  },
+  {
+    "start": 54.239,
+    "duration": 4.401,
+    "text": "um i'm choosing which output i wanna use"
+  },
+  {
+    "start": 57.92,
+    "duration": 4.0,
+    "text": "so"
+  },
+  {
+    "start": 58.64,
+    "duration": 5.599,
+    "text": "that gives us a few cool"
+  },
+  {
+    "start": 61.92,
+    "duration": 4.559,
+    "text": "options to do with it so i'm going to"
+  },
+  {
+    "start": 64.239,
+    "duration": 6.081,
+    "text": "talk about that later"
+  },
+  {
+    "start": 66.479,
+    "duration": 6.801,
+    "text": "um so first of all you'll see"
+  },
+  {
+    "start": 70.32,
+    "duration": 5.28,
+    "text": "a drop down with the available devices"
+  },
+  {
+    "start": 73.28,
+    "duration": 6.24,
+    "text": "in this case it's going to be my apc 40"
+  },
+  {
+    "start": 75.6,
+    "duration": 6.159,
+    "text": "mk 2 i'm connected with um"
+  },
+  {
+    "start": 79.52,
+    "duration": 4.48,
+    "text": "and currently nothing has happened"
+  },
+  {
+    "start": 81.759,
+    "duration": 4.4,
+    "text": "because the program itself just doesn't"
+  },
+  {
+    "start": 84.0,
+    "duration": 5.759,
+    "text": "do anything"
+  },
+  {
+    "start": 86.159,
+    "duration": 6.64,
+    "text": "um then over here"
+  },
+  {
+    "start": 89.759,
+    "duration": 3.601,
+    "text": "you can see that i'm able to remove the"
+  },
+  {
+    "start": 92.799,
+    "duration": 3.121,
+    "text": "current"
+  },
+  {
+    "start": 93.36,
+    "duration": 3.2,
+    "text": "shift key and now it's asking me to"
+  },
+  {
+    "start": 95.92,
+    "duration": 4.08,
+    "text": "press"
+  },
+  {
+    "start": 96.56,
+    "duration": 8.48,
+    "text": "a midi key to set as a shift"
+  },
+  {
+    "start": 100.0,
+    "duration": 5.04,
+    "text": "so in this case um i'm gonna pick"
+  },
+  {
+    "start": 105.439,
+    "duration": 7.04,
+    "text": "let's do this one so here now"
+  },
+  {
+    "start": 108.56,
+    "duration": 7.919,
+    "text": "it found the key so it's a d6"
+  },
+  {
+    "start": 112.479,
+    "duration": 7.361,
+    "text": "on channel 1 and you see that"
+  },
+  {
+    "start": 116.479,
+    "duration": 6.561,
+    "text": "it's already shifting the next button"
+  },
+  {
+    "start": 119.84,
+    "duration": 5.279,
+    "text": "i'm having here is to change the mode so"
+  },
+  {
+    "start": 123.04,
+    "duration": 4.399,
+    "text": "i can either set it to flash"
+  },
+  {
+    "start": 125.119,
+    "duration": 3.12,
+    "text": "so in flash mode i have to hold the"
+  },
+  {
+    "start": 127.439,
+    "duration": 3.921,
+    "text": "button"
+  },
+  {
+    "start": 128.239,
+    "duration": 5.841,
+    "text": "to erase the shift"
+  },
+  {
+    "start": 131.36,
+    "duration": 3.84,
+    "text": "or toggle and in toggle mode it's just a"
+  },
+  {
+    "start": 134.08,
+    "duration": 5.36,
+    "text": "press"
+  },
+  {
+    "start": 135.2,
+    "duration": 4.24,
+    "text": "and every press toggles the shift mode"
+  },
+  {
+    "start": 139.84,
+    "duration": 5.52,
+    "text": "so the next button goes"
+  },
+  {
+    "start": 143.44,
+    "duration": 3.439,
+    "text": "has to do with with what has to be"
+  },
+  {
+    "start": 145.36,
+    "duration": 4.48,
+    "text": "shifted"
+  },
+  {
+    "start": 146.879,
+    "duration": 4.881,
+    "text": "so you can either shift like everything"
+  },
+  {
+    "start": 149.84,
+    "duration": 5.92,
+    "text": "currently everything is shifted"
+  },
+  {
+    "start": 151.76,
+    "duration": 7.199,
+    "text": "except from the shift button or you can"
+  },
+  {
+    "start": 155.76,
+    "duration": 5.6,
+    "text": "make a custom list like for instance say"
+  },
+  {
+    "start": 158.959,
+    "duration": 5.441,
+    "text": "you only want this top"
+  },
+  {
+    "start": 161.36,
+    "duration": 5.68,
+    "text": "area to be shifted"
+  },
+  {
+    "start": 164.4,
+    "duration": 3.68,
+    "text": "then you click on list you click on"
+  },
+  {
+    "start": 167.04,
+    "duration": 5.04,
+    "text": "learn"
+  },
+  {
+    "start": 168.08,
+    "duration": 4.0,
+    "text": "and you can learn"
+  },
+  {
+    "start": 173.44,
+    "duration": 3.84,
+    "text": "the buttons that you want to shift so"
+  },
+  {
+    "start": 175.84,
+    "duration": 2.56,
+    "text": "this is your collection of shifted"
+  },
+  {
+    "start": 177.28,
+    "duration": 4.0,
+    "text": "buttons"
+  },
+  {
+    "start": 178.4,
+    "duration": 3.759,
+    "text": "so now only these buttons will be"
+  },
+  {
+    "start": 181.28,
+    "duration": 2.959,
+    "text": "shifted"
+  },
+  {
+    "start": 182.159,
+    "duration": 3.601,
+    "text": "but for this example i'll shift"
+  },
+  {
+    "start": 184.239,
+    "duration": 5.441,
+    "text": "everything"
+  },
+  {
+    "start": 185.76,
+    "duration": 4.479,
+    "text": "um so to give you an idea of how this"
+  },
+  {
+    "start": 189.68,
+    "duration": 3.76,
+    "text": "works"
+  },
+  {
+    "start": 190.239,
+    "duration": 5.681,
+    "text": "in practice i'm gonna start resolume"
+  },
+  {
+    "start": 193.44,
+    "duration": 2.48,
+    "text": "arena"
+  },
+  {
+    "start": 197.44,
+    "duration": 7.6,
+    "text": "i already made like a a setup"
+  },
+  {
+    "start": 201.84,
+    "duration": 4.319,
+    "text": "um so the first thing to notice is that"
+  },
+  {
+    "start": 205.04,
+    "duration": 5.199,
+    "text": "we're not"
+  },
+  {
+    "start": 206.159,
+    "duration": 7.841,
+    "text": "connecting directly to the apc 40"
+  },
+  {
+    "start": 210.239,
+    "duration": 7.121,
+    "text": "but we have as i said like two virtual"
+  },
+  {
+    "start": 214.0,
+    "duration": 5.76,
+    "text": "ports midi shift one midi shift two um"
+  },
+  {
+    "start": 217.36,
+    "duration": 3.76,
+    "text": "resolume already detected that it's a"
+  },
+  {
+    "start": 219.76,
+    "duration": 3.199,
+    "text": "pc40 because"
+  },
+  {
+    "start": 221.12,
+    "duration": 6.24,
+    "text": "it's it's just tunneling the software is"
+  },
+  {
+    "start": 222.959,
+    "duration": 8.081,
+    "text": "just tunneling the messages"
+  },
+  {
+    "start": 227.36,
+    "duration": 6.72,
+    "text": "and um i made a setup"
+  },
+  {
+    "start": 231.04,
+    "duration": 7.04,
+    "text": "so the first"
+  },
+  {
+    "start": 234.08,
+    "duration": 7.439,
+    "text": "normal page or the non-shifted page"
+  },
+  {
+    "start": 238.08,
+    "duration": 7.12,
+    "text": "is just for selecting the clips um"
+  },
+  {
+    "start": 241.519,
+    "duration": 6.481,
+    "text": "and on the other hand"
+  },
+  {
+    "start": 245.2,
+    "duration": 3.84,
+    "text": "i made the shift and as you can see"
+  },
+  {
+    "start": 248.0,
+    "duration": 4.84,
+    "text": "that's"
+  },
+  {
+    "start": 249.04,
+    "duration": 6.96,
+    "text": "kind of cool it's and the software"
+  },
+  {
+    "start": 252.84,
+    "duration": 5.48,
+    "text": "stores the messages it's get so"
+  },
+  {
+    "start": 256.0,
+    "duration": 3.04,
+    "text": "as soon as you press shift you will see"
+  },
+  {
+    "start": 258.32,
+    "duration": 2.24,
+    "text": "like"
+  },
+  {
+    "start": 259.04,
+    "duration": 3.76,
+    "text": "the other colors it's updating"
+  },
+  {
+    "start": 260.56,
+    "duration": 5.44,
+    "text": "everything uh to the"
+  },
+  {
+    "start": 262.8,
+    "duration": 6.959,
+    "text": "console itself um and here"
+  },
+  {
+    "start": 266.0,
+    "duration": 6.96,
+    "text": "i added another functionality"
+  },
+  {
+    "start": 269.759,
+    "duration": 5.361,
+    "text": "so you can either do like"
+  },
+  {
+    "start": 272.96,
+    "duration": 3.04,
+    "text": "uh extend the functionality for your"
+  },
+  {
+    "start": 275.12,
+    "duration": 3.92,
+    "text": "program"
+  },
+  {
+    "start": 276.0,
+    "duration": 6.32,
+    "text": "or you could for instance"
+  },
+  {
+    "start": 279.04,
+    "duration": 6.48,
+    "text": "control with your regular"
+  },
+  {
+    "start": 282.32,
+    "duration": 5.439,
+    "text": "device for instance resolume and"
+  },
+  {
+    "start": 285.52,
+    "duration": 4.239,
+    "text": "with the shift connecting another"
+  },
+  {
+    "start": 287.759,
+    "duration": 6.16,
+    "text": "program like ableton"
+  },
+  {
+    "start": 289.759,
+    "duration": 5.681,
+    "text": "so midi shift this way you're able to"
+  },
+  {
+    "start": 293.919,
+    "duration": 3.361,
+    "text": "double the functionality of your"
+  },
+  {
+    "start": 295.44,
+    "duration": 4.88,
+    "text": "controller and"
+  },
+  {
+    "start": 297.28,
+    "duration": 6.08,
+    "text": "split them into two virtual"
+  },
+  {
+    "start": 300.32,
+    "duration": 7.76,
+    "text": "devices all right that's it"
+  },
+  {
+    "start": 303.36,
+    "duration": 4.72,
+    "text": "see you next time"
+  }
+]

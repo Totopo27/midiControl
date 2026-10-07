@@ -1,0 +1,77 @@
+[
+  {
+    "start": 0.0,
+    "end": 5.8,
+    "text": "Welcome to this tutorial about MIDI Split."
+  },
+  {
+    "start": 5.8,
+    "end": 10.200000000000001,
+    "text": "MIDI Split allows you to easily connect a single MIDI device to different applications"
+  },
+  {
+    "start": 10.200000000000001,
+    "end": 11.8,
+    "text": "at the same time."
+  },
+  {
+    "start": 11.8,
+    "end": 17.64,
+    "text": "By simply starting the app, two new virtual MIDI devices will be created, device A and"
+  },
+  {
+    "start": 17.64,
+    "end": 18.64,
+    "text": "B."
+  },
+  {
+    "start": 18.64,
+    "end": 22.94,
+    "text": "Select the physical device you want to connect to with the drop-down device picker."
+  },
+  {
+    "start": 22.94,
+    "end": 26.04,
+    "text": "Right next to that, you'll find the routing buttons."
+  },
+  {
+    "start": 26.04,
+    "end": 28.36,
+    "text": "These buttons control the data flow."
+  },
+  {
+    "start": 28.36,
+    "end": 34.44,
+    "text": "For instance, in this situation, all data from the device will be routed to A and B,"
+  },
+  {
+    "start": 34.44,
+    "end": 39.76,
+    "text": "but only the data from the application connected to A will flow back to the device."
+  },
+  {
+    "start": 39.76,
+    "end": 42.8,
+    "text": "This will help you to prevent conflicting behavior."
+  },
+  {
+    "start": 42.8,
+    "end": 46.44,
+    "text": "With the four in and out buttons, you can make any routing combination."
+  },
+  {
+    "start": 46.44,
+    "end": 48.72,
+    "text": "Thanks for watching this tutorial."
+  },
+  {
+    "start": 48.72,
+    "end": 50.16,
+    "text": "Don't forget to subscribe."
+  },
+  {
+    "start": 58.36,
+    "end": 60.36,
+    "text": "See you next time."
+  }
+]

@@ -4,14 +4,33 @@
  */
 const dgram = require('dgram');
 const MidiRouter = require('./router');
+const ShiftEngine = require('./shift_engine');
 const { encodeOSCMessage } = require('./osc');
 
 class StreamProcessor {
     constructor() {
         this.midiRouter = new MidiRouter();
+        this.shiftEngine = new ShiftEngine();
         this.udpClient = dgram.createSocket('udp4');
         this.oscTargets = []; // [{ host, port, pathPrefix }]
         this.listeners = [];  // Callbacks para observadores (monitor / UI)
+
+        // Configurar re-emisión física del buffer al alternar de capa
+        this.shiftEngine.onHardwareEmit((items) => {
+            this.handleShiftHardwareEmit(items);
+        });
+
+        // Notificar cambios de capa a la telemetría y UI
+        this.shiftEngine.onLayerChange((newLayer, prevLayer, reason) => {
+            this.notify({
+                protocol: 'system',
+                type: 'layer_change',
+                activeLayer: newLayer,
+                previousLayer: prevLayer,
+                reason,
+                timestamp: Date.now()
+            });
+        });
 
         // Enrutar automáticamente entradas MIDI de hardware hacia observadores y despacho opcional
         this.midiRouter.onMidiInput((parsedMsg) => {
@@ -19,7 +38,40 @@ class StreamProcessor {
         });
     }
 
+    handleShiftHardwareEmit(items) {
+        // Enviar ráfaga directa de mensajes al hardware sin demoras
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            try {
+                if (item.type === 'note') {
+                    if (item.value > 0) {
+                        this.midiRouter.sendNoteOn(item.channel - 1, item.index, item.value);
+                    } else {
+                        this.midiRouter.sendNoteOff(item.channel - 1, item.index);
+                    }
+                } else if (item.type === 'cc') {
+                    // Si el router implementa sendCC
+                    if (typeof this.midiRouter.sendCC === 'function') {
+                        this.midiRouter.sendCC(item.channel - 1, item.index, item.value);
+                    }
+                }
+            } catch (_) {}
+        }
+    }
+
     handleHardwareInput(msg) {
+        // Verificar si la entrada desde hardware está permitida
+        if (!this.midiRouter.isRouteAllowed('hardware', 'system')) {
+            return;
+        }
+
+        // Intercepción por el motor Shift (evaluar si es botón Shift o captura MIDI Learn)
+        const shiftResult = this.shiftEngine.processHardwareInput(msg);
+        if (shiftResult.consumed) {
+            // El evento fue consumido por el motor Shift
+            return;
+        }
+
         // Notificar a la UI inmediatamente con estructura tipo MidiView
         const telemetry = {
             protocol: 'midi',
@@ -33,7 +85,8 @@ class StreamProcessor {
             hex: msg.hex,
             durationUs: 0.1,
             timestamp: msg.timestamp,
-            midiStatus: { name: msg.source }
+            midiStatus: { name: msg.source },
+            layer: this.shiftEngine.activeLayer
         };
         this.notify(telemetry);
 
@@ -89,39 +142,50 @@ class StreamProcessor {
 
     dispatchNoteOn(channel, note, velocity = 127, extraPayload = {}) {
         const startTime = process.hrtime.bigint();
+        const sourceRoute = extraPayload.source_route || extraPayload.appId || 'app_a';
 
-        // 1. Rama A: Envío Físico MIDI
+        // 1. Rama A: Envío Físico MIDI (Aislamiento de Retorno / Prevención de bucles)
         let midiResult = null;
-        try {
-            midiResult = this.midiRouter.sendNoteOn(channel, note, velocity);
-        } catch (e) {
-            midiResult = { error: e.message };
+        if (this.midiRouter.isRouteAllowed(sourceRoute, 'hardware')) {
+            try {
+                midiResult = this.midiRouter.sendNoteOn(channel, note, velocity);
+            } catch (e) {
+                midiResult = { error: e.message };
+            }
+        } else {
+            midiResult = { status: 'blocked_by_routing_matrix', reason: `Feedback loop prevented: ${sourceRoute} -> hardware is disabled` };
         }
 
         // 2. Rama B: Envío OSC UDP en paralelo
+        let oscDelivered = false;
         const noteFloat = extraPayload.noteFloat !== undefined ? extraPayload.noteFloat : parseFloat(note);
         const velFloat = parseFloat(velocity);
-        const oscBuffer = encodeOSCMessage('/mnote', 'ff', [noteFloat, velFloat]);
 
-        for (let i = 0; i < this.oscTargets.length; i++) {
-            const target = this.oscTargets[i];
-            this.udpClient.send(oscBuffer, 0, oscBuffer.length, target.port, target.host);
+        if (this.midiRouter.isRouteAllowed(sourceRoute, 'osc')) {
+            const oscBuffer = encodeOSCMessage('/mnote', 'ff', [noteFloat, velFloat]);
+            for (let i = 0; i < this.oscTargets.length; i++) {
+                const target = this.oscTargets[i];
+                this.udpClient.send(oscBuffer, 0, oscBuffer.length, target.port, target.host);
+            }
+            oscDelivered = true;
         }
 
         const endTime = process.hrtime.bigint();
         const durationUs = Number(endTime - startTime) / 1000; // Microsegundos
 
-        // Notificar telemetría OSC dedicada
-        this.notify({
-            protocol: 'osc',
-            dir: 'out',
-            path: '/mnote',
-            types: ',ff',
-            args: `[${noteFloat.toFixed(2)}, ${velFloat.toFixed(1)}]`,
-            target: `${this.oscTargets[0]?.host || '127.0.0.1'}:${this.oscTargets[0]?.port || 57120}`,
-            durationUs,
-            timestamp: Date.now()
-        });
+        // Notificar telemetría OSC dedicada si fue entregado
+        if (oscDelivered) {
+            this.notify({
+                protocol: 'osc',
+                dir: 'out',
+                path: '/mnote',
+                types: ',ff',
+                args: `[${noteFloat.toFixed(2)}, ${velFloat.toFixed(1)}]`,
+                target: `${this.oscTargets[0]?.host || '127.0.0.1'}:${this.oscTargets[0]?.port || 57120}`,
+                durationUs,
+                timestamp: Date.now()
+            });
+        }
 
         const telemetry = {
             protocol: 'midi',
@@ -145,38 +209,49 @@ class StreamProcessor {
 
     dispatchNoteOff(channel, note, extraPayload = {}) {
         const startTime = process.hrtime.bigint();
+        const sourceRoute = extraPayload.source_route || extraPayload.appId || 'app_a';
 
-        // 1. Rama A: Envío Físico MIDI
+        // 1. Rama A: Envío Físico MIDI (Aislamiento de Retorno)
         let midiResult = null;
-        try {
-            midiResult = this.midiRouter.sendNoteOff(channel, note);
-        } catch (e) {
-            midiResult = { error: e.message };
+        if (this.midiRouter.isRouteAllowed(sourceRoute, 'hardware')) {
+            try {
+                midiResult = this.midiRouter.sendNoteOff(channel, note);
+            } catch (e) {
+                midiResult = { error: e.message };
+            }
+        } else {
+            midiResult = { status: 'blocked_by_routing_matrix', reason: `Feedback loop prevented: ${sourceRoute} -> hardware is disabled` };
         }
 
         // 2. Rama B: Envío OSC UDP en paralelo (velocidad 0.0)
+        let oscDelivered = false;
         const noteFloat = extraPayload.noteFloat !== undefined ? extraPayload.noteFloat : parseFloat(note);
-        const oscBuffer = encodeOSCMessage('/mnote', 'ff', [noteFloat, 0.0]);
 
-        for (let i = 0; i < this.oscTargets.length; i++) {
-            const target = this.oscTargets[i];
-            this.udpClient.send(oscBuffer, 0, oscBuffer.length, target.port, target.host);
+        if (this.midiRouter.isRouteAllowed(sourceRoute, 'osc')) {
+            const oscBuffer = encodeOSCMessage('/mnote', 'ff', [noteFloat, 0.0]);
+            for (let i = 0; i < this.oscTargets.length; i++) {
+                const target = this.oscTargets[i];
+                this.udpClient.send(oscBuffer, 0, oscBuffer.length, target.port, target.host);
+            }
+            oscDelivered = true;
         }
 
         const endTime = process.hrtime.bigint();
         const durationUs = Number(endTime - startTime) / 1000;
 
         // Notificar telemetría OSC dedicada
-        this.notify({
-            protocol: 'osc',
-            dir: 'out',
-            path: '/mnote',
-            types: ',ff',
-            args: `[${noteFloat.toFixed(2)}, 0.0]`,
-            target: `${this.oscTargets[0]?.host || '127.0.0.1'}:${this.oscTargets[0]?.port || 57120}`,
-            durationUs,
-            timestamp: Date.now()
-        });
+        if (oscDelivered) {
+            this.notify({
+                protocol: 'osc',
+                dir: 'out',
+                path: '/mnote',
+                types: ',ff',
+                args: `[${noteFloat.toFixed(2)}, 0.0]`,
+                target: `${this.oscTargets[0]?.host || '127.0.0.1'}:${this.oscTargets[0]?.port || 57120}`,
+                durationUs,
+                timestamp: Date.now()
+            });
+        }
 
         const telemetry = {
             protocol: 'midi',

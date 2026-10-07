@@ -126,3 +126,43 @@ Fase 4: Prueba de estrés y estabilidad
   2. Evaluar el estado de la memoria para descartar fugas o retención de notas no liberadas.
   3. Probar la ejecución integrada de extremo a extremo (`test_integration_e2e.js`).
 - **Criterio de aprobación (Gate 4):** 100% de eventos procesados, 0% de pérdida de paquetes, registro `activeNotesMap` vacío al concluir la prueba y cero excepciones no capturadas.
+
+---
+
+### Fase 5: Modo Rendimiento (Bypass UI / Zero-Overhead Live)
+- **Objetivo:** Desacoplar en caliente la serialización y el streaming de telemetría hacia WebSockets y consola sin detener ni interferir en el transporte de notas en tiempo real (patrón inspirado en MidiView).
+- **Tareas:**
+  1. Incorporar `isBypass` y `setBypass()` en `src/monitor.js` y `src/app.js`.
+  2. Integrar botón interactivo y sincronización de estado en el panel web (`midi_monitor.html`).
+  3. Diseñar compuerta automatizada con prueba de ráfaga de 1000 eventos bajo bypass (`test_fase5_bypass.js`).
+- **Criterio de aprobación (Gate 5):** 0 eventos de telemetría transmitidos por WebSocket mientras el modo bypass está activo, 100% de los paquetes entregados intactos a los destinos de audio/OSC, y reanudación limpia en caliente sin fugas.
+
+---
+
+### Fase 6: Matriz de Ruteo Asimétrico y Prevención de Bucles (MIDI Split)
+- **Objetivo:** Implementar una matriz direccional de enrutamiento con permisos `allowIn` / `allowOut` independientes por origen y destino para evitar bucles de retroalimentación (*feedback loops*) al conectar múltiples aplicaciones concurrentes.
+- **Tareas:**
+  1. Añadir `routingMatrix`, `setRoutePermission()` y `isRouteAllowed()` en `src/router.js`.
+  2. Conectar las compuertas de despacho en `src/processor.js` tanto para el bus físico como para la rama OSC.
+  3. Habilitar sincronización y conmutación de permisos en caliente vía WebSockets (`set_routing`) en `src/app.js`.
+- **Criterio de aprobación (Gate 6):** Script automatizado (`test_fase6_routing.js`) confirmando que el retorno de apps autorizadas (App A) llega al hardware, mientras que el retorno de apps no autorizadas (App B) es bloqueado al 100% sin generar colisión ni fuga, con reconfiguración dinámica en caliente y aislamiento independiente para la rama OSC.
+
+---
+
+### Fase 7: Motor Shift & Memoria de Estado de LEDs (StateCache)
+- **Objetivo:** Conmutación de capas físicas de control (*Shift*) con modos Toggle (conmutado) y Flash (momentáneo), soporte de *MIDI Learn*, y memoria de estado de LEDs (`StateCache`) con re-emisión instantánea (<2 ms) al alternar entre capas.
+- **Tareas:**
+  1. Diseñar el módulo `src/shift_engine.js` con soporte multicapa, modos de activación e inspección de ráfaga.
+  2. Integrar el motor Shift en `src/processor.js` para intercepción de entradas y despacho del buffer lumínico hacia el hardware físico.
+  3. Construir la compuerta automatizada de validación (`test_fase7_shift.js`) midiendo latencia de volcado y preservación de estado en 64 controles.
+- **Criterio de aprobación (Gate 7):** Volcado completo del buffer de estados (64 pads simulados) en menos de 2 ms hacia el hardware, funcionamiento riguroso de modos Toggle y Flash, y captura precisa vía MIDI Learn sin fugas de notas.
+
+---
+
+### Fase 7: Motor Shift & Memoria de Estado de LEDs (StateCache - MidiShift)
+- **Objetivo:** Conmutación dinámica de capas físicas (Toggle / Flash) con memoria de estado bidireccional (`StateCache`) para re-emitir en ráfaga el mapa lumínico de LEDs al hardware en menos de 2 ms al cambiar de capa.
+- **Tareas:**
+  1. Implementar `src/shift_engine.js` con soporte para modos `flash`, `toggle`, `midiLearn` y `StateCache` indexado por capa.
+  2. Integrar el motor de capas con el despacho de hardware y telemetría en `src/processor.js` y `src/app.js`.
+  3. Validar con prueba de estrés (`test_fase7_shift.js`) con 64 controles por capa demostrando volcado de estado ultrarrápido (< 2 ms).
+- **Criterio de aprobación (Gate 7):** Volcado completo del buffer de LEDs ejecutado en menos de 2 milisegundos con cero pérdida de paquetes y asignación por MIDI Learn certificada.

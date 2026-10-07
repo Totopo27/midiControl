@@ -1,0 +1,152 @@
+[
+  {
+    "start": 0.0,
+    "end": 7.4,
+    "text": "tutorial about MidiView. MidiView is a cool handy program that you can use"
+  },
+  {
+    "start": 7.4,
+    "end": 13.68,
+    "text": "whenever you want to like debug your MIDI or see what's going on or stuff"
+  },
+  {
+    "start": 13.68,
+    "end": 20.080000000000002,
+    "text": "like that. So the concept is that MidiView connects to your MIDI device"
+  },
+  {
+    "start": 20.080000000000002,
+    "end": 26.080000000000002,
+    "text": "and your application connects to MIDI view. So what we do is we create a"
+  },
+  {
+    "start": 26.12,
+    "end": 32.72,
+    "text": "virtual MIDI port where you can connect to and that way you can see both"
+  },
+  {
+    "start": 32.72,
+    "end": 40.52,
+    "text": "directions the messages in both directions. So I have a MIDI setup here"
+  },
+  {
+    "start": 40.52,
+    "end": 50.2,
+    "text": "it's a APC40 MK2. This is my MIDI view application it's really simple it's"
+  },
+  {
+    "start": 50.2,
+    "end": 55.88,
+    "text": "enabled or disabled I'll come back to that later. I can connect to my device"
+  },
+  {
+    "start": 55.92,
+    "end": 63.28,
+    "text": "and now I can see anything I do on my screen. So the interesting part starts"
+  },
+  {
+    "start": 63.28,
+    "end": 77.80000000000001,
+    "text": "when I open up another program and connect to the... let's see preferences"
+  },
+  {
+    "start": 78.75999999999999,
+    "end": 86.24,
+    "text": "preferences. So here's my APC40 but I don't want to connect to my APC40"
+  },
+  {
+    "start": 86.24,
+    "end": 94.32,
+    "text": "I want to connect to my MIDI view port. So whenever I do that it's"
+  },
+  {
+    "start": 94.32,
+    "end": 103.75999999999999,
+    "text": "gonna act like it's gonna act like a loop. So Resolume thinks that"
+  },
+  {
+    "start": 103.76,
+    "end": 110.72,
+    "text": "it's an APC40 that is found on the MIDI view port. So whenever I load the"
+  },
+  {
+    "start": 110.72,
+    "end": 120.04,
+    "text": "default shortcuts for the APC40 I'm not sure if you can see that but all the"
+  },
+  {
+    "start": 120.04,
+    "end": 140.48000000000002,
+    "text": "colors everything is there. And that's also what you see here. So whenever I"
+  },
+  {
+    "start": 140.48000000000002,
+    "end": 147.28,
+    "text": "refresh you see the application talking to the software and vice versa."
+  },
+  {
+    "start": 147.28,
+    "end": 156.68,
+    "text": "So now you can also see things that are changing. And actually you can see that"
+  },
+  {
+    "start": 156.68,
+    "end": 160.72,
+    "text": "a lot of a lot is happening. So whenever you have like problems with"
+  },
+  {
+    "start": 160.72,
+    "end": 165.76,
+    "text": "your MIDI or you're not sure if things get laggy or whatever just use"
+  },
+  {
+    "start": 165.76,
+    "end": 172.28,
+    "text": "this and you'll immediately see what the problem is. So I said that I"
+  },
+  {
+    "start": 172.28,
+    "end": 178.58,
+    "text": "would come back to the enable disable function. Well if you disable MIDI view"
+  },
+  {
+    "start": 178.58,
+    "end": 185.52,
+    "text": "the MIDI is still sent through but we're not doing anything with it. So if"
+  },
+  {
+    "start": 185.52,
+    "end": 190.84,
+    "text": "you're live on a show or whatever and you want to have MIDI view in between"
+  },
+  {
+    "start": 190.84,
+    "end": 196.4,
+    "text": "just as backup as suddenly you enter like a weird state or something then"
+  },
+  {
+    "start": 196.4,
+    "end": 201.52,
+    "text": "you can enable it afterwards so you can see what's going on but during"
+  },
+  {
+    "start": 201.52,
+    "end": 206.8,
+    "text": "whatever you're doing you can disable it so you have no lag or no problems"
+  },
+  {
+    "start": 206.8,
+    "end": 213.68,
+    "text": "from the software itself. So yeah that's MIDI view it's free head over"
+  },
+  {
+    "start": 213.68,
+    "end": 219.28,
+    "text": "to the website download it let me know what you think if you like this"
+  },
+  {
+    "start": 219.28,
+    "end": 225.92000000000002,
+    "text": "video subscribe like or comment and talk to you later bye bye"
+  }
+]

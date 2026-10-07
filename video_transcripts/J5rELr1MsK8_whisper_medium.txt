@@ -1,0 +1,15 @@
+[00:00] Welcome to this tutorial about MIDI Split.
+[00:05] MIDI Split allows you to easily connect a single MIDI device to different applications
+[00:10] at the same time.
+[00:11] By simply starting the app, two new virtual MIDI devices will be created, device A and
+[00:17] B.
+[00:18] Select the physical device you want to connect to with the drop-down device picker.
+[00:22] Right next to that, you'll find the routing buttons.
+[00:26] These buttons control the data flow.
+[00:28] For instance, in this situation, all data from the device will be routed to A and B,
+[00:34] but only the data from the application connected to A will flow back to the device.
+[00:39] This will help you to prevent conflicting behavior.
+[00:42] With the four in and out buttons, you can make any routing combination.
+[00:46] Thanks for watching this tutorial.
+[00:48] Don't forget to subscribe.
+[00:58] See you next time.

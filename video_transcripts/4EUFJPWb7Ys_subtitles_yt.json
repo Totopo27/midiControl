@@ -1,0 +1,402 @@
+[
+  {
+    "start": 0.0,
+    "duration": 6.72,
+    "text": "this tutorial about midi view"
+  },
+  {
+    "start": 3.04,
+    "duration": 6.8,
+    "text": "um midi view is a cool handy program"
+  },
+  {
+    "start": 6.72,
+    "duration": 6.64,
+    "text": "that you can use whenever you wanna like"
+  },
+  {
+    "start": 9.84,
+    "duration": 6.96,
+    "text": "debug your midi or see what's going on"
+  },
+  {
+    "start": 13.36,
+    "duration": 6.4,
+    "text": "or stuff like that so the concept"
+  },
+  {
+    "start": 16.8,
+    "duration": 3.6,
+    "text": "is that midi view connects to your midi"
+  },
+  {
+    "start": 19.76,
+    "duration": 3.359,
+    "text": "device"
+  },
+  {
+    "start": 20.4,
+    "duration": 3.84,
+    "text": "and your application connects to midi"
+  },
+  {
+    "start": 23.119,
+    "duration": 4.721,
+    "text": "view"
+  },
+  {
+    "start": 24.24,
+    "duration": 6.32,
+    "text": "so what we do is we create a virtual"
+  },
+  {
+    "start": 27.84,
+    "duration": 4.719,
+    "text": "midi port where you can connect to and"
+  },
+  {
+    "start": 30.56,
+    "duration": 5.76,
+    "text": "that way you can see"
+  },
+  {
+    "start": 32.559,
+    "duration": 6.241,
+    "text": "both directions um"
+  },
+  {
+    "start": 36.32,
+    "duration": 3.52,
+    "text": "the messages in both directions so i"
+  },
+  {
+    "start": 38.8,
+    "duration": 4.64,
+    "text": "have a midi"
+  },
+  {
+    "start": 39.84,
+    "duration": 6.96,
+    "text": "setup here it's a pc40 mk2"
+  },
+  {
+    "start": 43.44,
+    "duration": 6.56,
+    "text": "um this is my midi view"
+  },
+  {
+    "start": 46.8,
+    "duration": 5.68,
+    "text": "application it's really simple uh"
+  },
+  {
+    "start": 50.0,
+    "duration": 4.64,
+    "text": "it's enabled or disabled i'll come back"
+  },
+  {
+    "start": 52.48,
+    "duration": 4.719,
+    "text": "to that later"
+  },
+  {
+    "start": 54.64,
+    "duration": 4.079,
+    "text": "i can connect to my device and now i can"
+  },
+  {
+    "start": 57.199,
+    "duration": 4.88,
+    "text": "see"
+  },
+  {
+    "start": 58.719,
+    "duration": 5.601,
+    "text": "anything i do on my screen so the"
+  },
+  {
+    "start": 62.079,
+    "duration": 6.001,
+    "text": "interesting part starts when"
+  },
+  {
+    "start": 64.32,
+    "duration": 9.44,
+    "text": "i open up another program and connect"
+  },
+  {
+    "start": 68.08,
+    "duration": 9.679,
+    "text": "to the"
+  },
+  {
+    "start": 73.76,
+    "duration": 3.999,
+    "text": "let's see preferences"
+  },
+  {
+    "start": 78.0,
+    "duration": 6.72,
+    "text": "i'm sorry preferences"
+  },
+  {
+    "start": 81.52,
+    "duration": 5.68,
+    "text": "um so here's my apc 40 but i don't want"
+  },
+  {
+    "start": 84.72,
+    "duration": 5.52,
+    "text": "to connect to my pc40"
+  },
+  {
+    "start": 87.2,
+    "duration": 6.559,
+    "text": "i want to connect to my midi view port"
+  },
+  {
+    "start": 90.24,
+    "duration": 7.44,
+    "text": "so whenever i do that um"
+  },
+  {
+    "start": 93.759,
+    "duration": 7.04,
+    "text": "it's it's gonna it's gonna act like um"
+  },
+  {
+    "start": 97.68,
+    "duration": 7.36,
+    "text": "it's gonna act like a loop"
+  },
+  {
+    "start": 100.799,
+    "duration": 7.921,
+    "text": "so resolume thinks that it's a apc40"
+  },
+  {
+    "start": 105.04,
+    "duration": 8.16,
+    "text": "that is found on the midi view port"
+  },
+  {
+    "start": 108.72,
+    "duration": 8.8,
+    "text": "so whenever i load the default shortcuts"
+  },
+  {
+    "start": 113.2,
+    "duration": 5.599,
+    "text": "for the apc40 i'm not sure if you can"
+  },
+  {
+    "start": 117.52,
+    "duration": 6.639,
+    "text": "see that"
+  },
+  {
+    "start": 118.799,
+    "duration": 5.36,
+    "text": "but all the colors everything is there"
+  },
+  {
+    "start": 125.2,
+    "duration": 5.839,
+    "text": "and that's also what you see here let's"
+  },
+  {
+    "start": 128.399,
+    "duration": 2.64,
+    "text": "stop this"
+  },
+  {
+    "start": 131.84,
+    "duration": 2.8,
+    "text": "let's open this"
+  },
+  {
+    "start": 135.04,
+    "duration": 6.72,
+    "text": "let's get midi view"
+  },
+  {
+    "start": 138.08,
+    "duration": 7.519,
+    "text": "so whenever i refresh"
+  },
+  {
+    "start": 141.76,
+    "duration": 8.16,
+    "text": "you see the application talking to the"
+  },
+  {
+    "start": 145.599,
+    "duration": 7.441,
+    "text": "software and vice versa so"
+  },
+  {
+    "start": 149.92,
+    "duration": 6.24,
+    "text": "now you can also see things"
+  },
+  {
+    "start": 153.04,
+    "duration": 3.44,
+    "text": "that are changing and actually you can"
+  },
+  {
+    "start": 156.16,
+    "duration": 2.88,
+    "text": "see"
+  },
+  {
+    "start": 156.48,
+    "duration": 4.16,
+    "text": "that a lot of a lot is happening so"
+  },
+  {
+    "start": 159.04,
+    "duration": 3.44,
+    "text": "whenever you have like problems with"
+  },
+  {
+    "start": 160.64,
+    "duration": 5.2,
+    "text": "your midi or you're not sure"
+  },
+  {
+    "start": 162.48,
+    "duration": 3.759,
+    "text": "if things get laggy or whatever just use"
+  },
+  {
+    "start": 165.84,
+    "duration": 3.119,
+    "text": "this"
+  },
+  {
+    "start": 166.239,
+    "duration": 4.401,
+    "text": "and you'll immediately immediately see"
+  },
+  {
+    "start": 168.959,
+    "duration": 4.241,
+    "text": "what the problem is"
+  },
+  {
+    "start": 170.64,
+    "duration": 3.84,
+    "text": "so i said that i would come back to the"
+  },
+  {
+    "start": 173.2,
+    "duration": 4.8,
+    "text": "enable disable"
+  },
+  {
+    "start": 174.48,
+    "duration": 7.039,
+    "text": "function well if you disable"
+  },
+  {
+    "start": 178.0,
+    "duration": 6.239,
+    "text": "midi view the midi is still sent"
+  },
+  {
+    "start": 181.519,
+    "duration": 3.36,
+    "text": "through but we're not doing anything"
+  },
+  {
+    "start": 184.239,
+    "duration": 2.961,
+    "text": "with it"
+  },
+  {
+    "start": 184.879,
+    "duration": 3.521,
+    "text": "so if you're live on the show or"
+  },
+  {
+    "start": 187.2,
+    "duration": 3.119,
+    "text": "whatever"
+  },
+  {
+    "start": 188.4,
+    "duration": 3.6,
+    "text": "and you want to have midi view in"
+  },
+  {
+    "start": 190.319,
+    "duration": 4.56,
+    "text": "between just as backup"
+  },
+  {
+    "start": 192.0,
+    "duration": 4.159,
+    "text": "as suddenly you enter like a weird state"
+  },
+  {
+    "start": 194.879,
+    "duration": 3.521,
+    "text": "or something"
+  },
+  {
+    "start": 196.159,
+    "duration": 4.08,
+    "text": "then you can enable it afterwards so you"
+  },
+  {
+    "start": 198.4,
+    "duration": 5.04,
+    "text": "can see what's going on"
+  },
+  {
+    "start": 200.239,
+    "duration": 4.961,
+    "text": "but during whatever you're doing you can"
+  },
+  {
+    "start": 203.44,
+    "duration": 6.32,
+    "text": "disable it so you have no lag"
+  },
+  {
+    "start": 205.2,
+    "duration": 8.0,
+    "text": "or no problems from the software itself"
+  },
+  {
+    "start": 209.76,
+    "duration": 6.16,
+    "text": "so um yeah that's midi view it's free"
+  },
+  {
+    "start": 213.2,
+    "duration": 5.44,
+    "text": "head over to the website download it let"
+  },
+  {
+    "start": 215.92,
+    "duration": 5.84,
+    "text": "me know what you think"
+  },
+  {
+    "start": 218.64,
+    "duration": 3.76,
+    "text": "if you like this video subscribe like or"
+  },
+  {
+    "start": 221.76,
+    "duration": 5.52,
+    "text": "comment"
+  },
+  {
+    "start": 222.4,
+    "duration": 4.88,
+    "text": "and talk to you later bye"
+  }
+]

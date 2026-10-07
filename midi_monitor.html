@@ -678,6 +678,9 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                 PANIC (ALL NOTES OFF)
             </button>
+            <button class="btn" id="btn-bypass" title="Desacopla el renderizado y streaming de telemetría para garantizar 0% de sobrecarga y latencia ultra baja en shows en vivo">
+                <span id="bypass-text">MODO BYPASS (OFF)</span>
+            </button>
             <button class="btn" id="btn-pause">
                 <span id="pause-text">PAUSAR VISTA</span>
             </button>
@@ -807,6 +810,9 @@
         const socketStatus = document.getElementById('socket-status');
         const btnPause = document.getElementById('btn-pause');
         const pauseText = document.getElementById('pause-text');
+        const btnBypass = document.getElementById('btn-bypass');
+        const bypassText = document.getElementById('bypass-text');
+        let isBypass = false;
 
         // Pestañas
         const tabMidi = document.getElementById('tab-midi');
@@ -944,6 +950,8 @@
                     handleTelemetry(payload.data);
                 } else if (payload.type === 'device_inventory') {
                     updateDeviceDropdowns(payload);
+                } else if (payload.type === 'bypass_status') {
+                    updateBypassUI(payload.enabled);
                 }
             } catch (err) {
                 console.error('Error parseando telemetría:', err);
@@ -1037,6 +1045,27 @@
                 oscTbody.removeChild(oscTbody.lastChild);
             }
         }
+
+        function updateBypassUI(enabled) {
+            isBypass = !!enabled;
+            if (isBypass) {
+                bypassText.textContent = 'MODO BYPASS (ACTIVO)';
+                btnBypass.style.borderColor = 'var(--led-amber)';
+                btnBypass.style.color = 'var(--led-amber)';
+                btnBypass.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.25)';
+            } else {
+                bypassText.textContent = 'MODO BYPASS (OFF)';
+                btnBypass.style.borderColor = 'var(--border-hairline)';
+                btnBypass.style.color = 'var(--text-secondary)';
+                btnBypass.style.boxShadow = 'none';
+            }
+        }
+
+        btnBypass.addEventListener('click', () => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'set_bypass', enabled: !isBypass }));
+            }
+        });
 
         // --- 5. ACCIONES & TECLADO ---
         document.getElementById('btn-panic').addEventListener('click', () => {

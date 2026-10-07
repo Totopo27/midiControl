@@ -34,6 +34,36 @@ class LiveSentinelApp {
         this.wss = null;
         this.webClients = new Set();
         this.selectedChannel = 0; // Canal 1 por defecto
+        this.isBypass = false; // Modo Rendimiento / Zero-Overhead (desacopla telemetría de UI)
+    }
+
+    setBypass(enable) {
+        this.isBypass = !!enable;
+        this.terminalMonitor.setBypass(this.isBypass);
+        this.broadcastBypassStatus();
+        console.log(`[RENDIMIENTO] Modo Bypass / Zero-Overhead: ${this.isBypass ? 'ACTIVADO (UI silenciada)' : 'DESACTIVADO (Telemetría activa)'}`);
+        return this.isBypass;
+    }
+
+    broadcastBypassStatus() {
+        const payload = JSON.stringify({ type: 'bypass_status', enabled: this.isBypass });
+        for (const ws of this.webClients) {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(payload);
+            }
+        }
+    }
+
+    broadcastRoutingMatrix() {
+        const payload = JSON.stringify({
+            type: 'routing_matrix',
+            matrix: this.processor.midiRouter.getRoutingMatrix()
+        });
+        for (const ws of this.webClients) {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(payload);
+            }
+        }
     }
 
     async start(targetMidi = null, targetOscPort = 57120) {
@@ -57,6 +87,9 @@ class LiveSentinelApp {
 
         // Suscribir el monitor de consola
         this.processor.subscribe((event) => {
+            // Si el modo Bypass está activo, no alimentar terminal ni serializar hacia WebSockets
+            if (this.isBypass) return;
+
             this.terminalMonitor.logEvent(event);
             
             // Reenviar a clientes web que tengan el monitor abierto
@@ -132,6 +165,22 @@ class LiveSentinelApp {
                     // COMANDOS DE CONTROL DE DISPOSITIVOS Y MODOS
                     if (msg.type === 'get_devices') {
                         this.sendDeviceInventory(ws);
+                        ws.send(JSON.stringify({ type: 'bypass_status', enabled: this.isBypass }));
+                        ws.send(JSON.stringify({ type: 'routing_matrix', matrix: this.processor.midiRouter.getRoutingMatrix() }));
+                        return;
+                    }
+
+                    if (msg.type === 'set_routing') {
+                        // msg: { target: 'app_b', direction: 'out', allowed: false }
+                        if (msg.target && msg.direction !== undefined && msg.allowed !== undefined) {
+                            this.processor.midiRouter.setRoutePermission(msg.target, msg.direction, msg.allowed);
+                            this.broadcastRoutingMatrix();
+                        }
+                        return;
+                    }
+
+                    if (msg.type === 'set_bypass') {
+                        this.setBypass(!!msg.enabled);
                         return;
                     }
 

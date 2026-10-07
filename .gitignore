@@ -6,3 +6,5 @@ __pycache__/
 "hexgrid-workspace 06-10-2026/hexgrid-workspace/node_modules/"
 src-tauri/target/
 dist/
+video_transcripts/*.mp3
+video_transcripts/*.webm

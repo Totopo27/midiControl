@@ -1,0 +1,80 @@
+[00:00] this tutorial about midi view
+[00:03] um midi view is a cool handy program
+[00:06] that you can use whenever you wanna like
+[00:09] debug your midi or see what's going on
+[00:13] or stuff like that so the concept
+[00:16] is that midi view connects to your midi
+[00:19] device
+[00:20] and your application connects to midi
+[00:23] view
+[00:24] so what we do is we create a virtual
+[00:27] midi port where you can connect to and
+[00:30] that way you can see
+[00:32] both directions um
+[00:36] the messages in both directions so i
+[00:38] have a midi
+[00:39] setup here it's a pc40 mk2
+[00:43] um this is my midi view
+[00:46] application it's really simple uh
+[00:50] it's enabled or disabled i'll come back
+[00:52] to that later
+[00:54] i can connect to my device and now i can
+[00:57] see
+[00:58] anything i do on my screen so the
+[01:02] interesting part starts when
+[01:04] i open up another program and connect
+[01:08] to the
+[01:13] let's see preferences
+[01:18] i'm sorry preferences
+[01:21] um so here's my apc 40 but i don't want
+[01:24] to connect to my pc40
+[01:27] i want to connect to my midi view port
+[01:30] so whenever i do that um
+[01:33] it's it's gonna it's gonna act like um
+[01:37] it's gonna act like a loop
+[01:40] so resolume thinks that it's a apc40
+[01:45] that is found on the midi view port
+[01:48] so whenever i load the default shortcuts
+[01:53] for the apc40 i'm not sure if you can
+[01:57] see that
+[01:58] but all the colors everything is there
+[02:05] and that's also what you see here let's
+[02:08] stop this
+[02:11] let's open this
+[02:15] let's get midi view
+[02:18] so whenever i refresh
+[02:21] you see the application talking to the
+[02:25] software and vice versa so
+[02:29] now you can also see things
+[02:33] that are changing and actually you can
+[02:36] see
+[02:36] that a lot of a lot is happening so
+[02:39] whenever you have like problems with
+[02:40] your midi or you're not sure
+[02:42] if things get laggy or whatever just use
+[02:45] this
+[02:46] and you'll immediately immediately see
+[02:48] what the problem is
+[02:50] so i said that i would come back to the
+[02:53] enable disable
+[02:54] function well if you disable
+[02:58] midi view the midi is still sent
+[03:01] through but we're not doing anything
+[03:04] with it
+[03:04] so if you're live on the show or
+[03:07] whatever
+[03:08] and you want to have midi view in
+[03:10] between just as backup
+[03:12] as suddenly you enter like a weird state
+[03:14] or something
+[03:16] then you can enable it afterwards so you
+[03:18] can see what's going on
+[03:20] but during whatever you're doing you can
+[03:23] disable it so you have no lag
+[03:25] or no problems from the software itself
+[03:29] so um yeah that's midi view it's free
+[03:33] head over to the website download it let
+[03:35] me know what you think
+[03:38] if you like this video subscribe like or
+[03:41] comment
+[03:42] and talk to you later bye

@@ -12,9 +12,16 @@ class TerminalMonitor {
         this.noteOffCount = 0;
         this.activeChannels = new Set();
         this.isPaused = false;
+        this.isBypass = false; // Modo Bypass (Zero-Overhead Live Sentinel)
+    }
+
+    setBypass(enable) {
+        this.isBypass = !!enable;
+        return this.isBypass;
     }
 
     logEvent(event) {
+        if (this.isBypass) return; // Zero-Overhead: En bypass no procesa ni acumula nada
         if (event.protocol === 'osc') return; // TerminalMonitor es solo para eventos MIDI
 
         this.totalCount++;
@@ -45,6 +52,17 @@ class TerminalMonitor {
     }
 
     renderTable() {
+        if (this.isBypass) {
+            console.clear();
+            console.log('========================================================================================');
+            console.log('                      SMART MIDI & OSC LIVE SENTINEL MONITOR                            ');
+            console.log('========================================================================================');
+            console.log(' Estado: [BYPASS / ZERO-OVERHEAD ACTIVO] (Telemetría y renderizado suspendidos)');
+            console.log(' Tráfico MIDI/OSC en tiempo real activo al 100% con latencia mínima sin interrupción.');
+            console.log('========================================================================================\n');
+            return;
+        }
+
         console.clear();
         console.log('========================================================================================');
         console.log('                      SMART MIDI & OSC LIVE SENTINEL MONITOR                            ');

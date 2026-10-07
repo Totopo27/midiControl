@@ -1,0 +1,48 @@
+[00:00] Hey, welcome to this tutorial about midi shift.
+[00:05] Today I'm going to show you how the application works.
+[00:08] So midi shift is a cool little program that instantly doubles the amount of midi devices
+[00:15] you have.
+[00:16] So we're just giving up one button on your device, we're able to make like two virtual
+[00:24] devices and switch the output of your device between those virtual outputs.
+[00:31] I made this little scheme so you can see how it works.
+[00:37] So your midi device, in this case I have an APC40 setup, it's going to connect with
+[00:44] midi shift and midi shift is going to create two virtual ports and by toggling
+[00:51] the shift button I'm choosing which output I want to use.
+[00:58] So that gives us a few cool options to do with it, so I'm going to talk about that
+[01:04] later.
+[01:08] So first of all you'll see a dropdown with the available devices, in this case it's
+[01:14] going to be my APC40 MK2 I'm connected with and currently nothing has happened because
+[01:22] the program itself just doesn't do anything.
+[01:28] Then over here you can see that I'm able to remove the current shift key and now it's
+[01:35] asking me to press a midi key to set as a shift.
+[01:40] So in this case I'm going to pick, let's do this one, so here now it found the key,
+[01:50] so it's a D6 on channel 1 and you see that it's already shifting.
+[01:59] The next button I'm having here is to change the mode, so I can either set it to flash,
+[02:05] so in flash mode I have to hold the button to raise the shift or toggle and in toggle
+[02:13] mode it's just a press and every press toggles the shift mode.
+[02:20] So the next button has to do with what has to be shifted.
+[02:27] So you can either shift like everything, currently everything is shifted except from
+[02:32] the shift button, or you can make a custom list, like for instance say you only want
+[02:40] this top area to be shifted, you click on list, you click on learn and you can learn
+[02:53] the buttons that you want to shift.
+[02:55] So this is your collection of shifted buttons, so now only these buttons will be shifted.
+[03:02] But for this example I'll shift everything.
+[03:07] So to give you an idea of how this works in practice, I'm going to start Resolume Arena.
+[03:17] I already made like a setup.
+[03:22] So the first thing to notice is that we're not connecting directly to the APC40, but
+[03:30] we have as I said like two virtual ports, midi shift 1, midi shift 2, Resolume already
+[03:38] detected that it's APC40 because it's just tunneling the software, it's just tunneling
+[03:43] the messages.
+[03:47] And I made a setup, so the first normal page or the non-shifted page is just for selecting
+[03:59] the clips.
+[04:01] And on the other hand, I made the shift, and as you can see that's kind of cool,
+[04:10] it's the software stores the messages it gets.
+[04:15] So as soon as you press shift, you will see like the other colors, it's updating everything
+[04:21] to the console itself.
+[04:25] And here I added another functionality.
+[04:29] So you can either do like extend the functionality for your program, or you could for instance
+[04:37] control with your regular device, for instance Resolume, and with the shift connecting
+[04:47] another program like Ableton.
+[04:49] So midi shift, this way you're able to double the functionality of your controller
+[04:56] and split them into two virtual devices.
+[05:01] Alright, that's it, see you next time.

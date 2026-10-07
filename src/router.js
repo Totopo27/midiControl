@@ -13,6 +13,53 @@ class MidiRouter {
         this.activeInputName = null;
         this.activeNotes = new Map(); // key: `${channel}_${note}` -> timestamp
         this.inputListeners = [];
+
+        // Matriz de Ruteo Asimétrico y Prevención de Bucles (Inspirado en MIDI Split)
+        // Permite configurar rutas con permisos direccionales independientes:
+        // 'hardware': { allowIn: true, allowOut: true }
+        // 'app_a':    { allowIn: true, allowOut: true } (DAW con envío y retorno permitido)
+        // 'app_b':    { allowIn: true, allowOut: false } (App que recibe de HW pero no puede enviar retorno al HW)
+        this.routingMatrix = {
+            hardware: { allowIn: true, allowOut: true },
+            app_a:    { allowIn: true, allowOut: true },
+            app_b:    { allowIn: true, allowOut: false },
+            osc:      { allowIn: true, allowOut: true }
+        };
+    }
+
+    setRoutePermission(target, direction, allowed) {
+        if (!this.routingMatrix[target]) {
+            this.routingMatrix[target] = { allowIn: true, allowOut: true };
+        }
+        if (direction === 'in' || direction === 'out') {
+            const key = direction === 'in' ? 'allowIn' : 'allowOut';
+            this.routingMatrix[target][key] = !!allowed;
+        }
+        return this.routingMatrix[target];
+    }
+
+    getRoutingMatrix() {
+        return { ...this.routingMatrix };
+    }
+
+    isRouteAllowed(source, destination) {
+        // 1. Si source es una aplicación (ej. app_a, app_b):
+        // allowOut de la app determina si tiene permiso de enviar datos hacia el destino
+        if (this.routingMatrix[source]) {
+            if (this.routingMatrix[source].allowOut === false) {
+                return false;
+            }
+        }
+
+        // 2. Si destination es un receptor (ej. hardware u osc):
+        // allowOut del hardware/osc determina si la salida física o red está habilitada
+        if (this.routingMatrix[destination]) {
+            if (this.routingMatrix[destination].allowOut === false) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     async init() {
@@ -100,6 +147,7 @@ class MidiRouter {
 
                     const parsed = {
                         type: 'midi_hardware_in',
+                        source_route: 'hardware',
                         dir: 'in',
                         event: eventName,
                         description: description,

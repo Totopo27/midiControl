@@ -1,0 +1,30 @@
+[00:00] tutorial about MidiView. MidiView is a cool handy program that you can use
+[00:07] whenever you want to like debug your MIDI or see what's going on or stuff
+[00:13] like that. So the concept is that MidiView connects to your MIDI device
+[00:20] and your application connects to MIDI view. So what we do is we create a
+[00:26] virtual MIDI port where you can connect to and that way you can see both
+[00:32] directions the messages in both directions. So I have a MIDI setup here
+[00:40] it's a APC40 MK2. This is my MIDI view application it's really simple it's
+[00:50] enabled or disabled I'll come back to that later. I can connect to my device
+[00:55] and now I can see anything I do on my screen. So the interesting part starts
+[01:03] when I open up another program and connect to the... let's see preferences
+[01:18] preferences. So here's my APC40 but I don't want to connect to my APC40
+[01:26] I want to connect to my MIDI view port. So whenever I do that it's
+[01:34] gonna act like it's gonna act like a loop. So Resolume thinks that
+[01:43] it's an APC40 that is found on the MIDI view port. So whenever I load the
+[01:50] default shortcuts for the APC40 I'm not sure if you can see that but all the
+[02:00] colors everything is there. And that's also what you see here. So whenever I
+[02:20] refresh you see the application talking to the software and vice versa.
+[02:27] So now you can also see things that are changing. And actually you can see that
+[02:36] a lot of a lot is happening. So whenever you have like problems with
+[02:40] your MIDI or you're not sure if things get laggy or whatever just use
+[02:45] this and you'll immediately see what the problem is. So I said that I
+[02:52] would come back to the enable disable function. Well if you disable MIDI view
+[02:58] the MIDI is still sent through but we're not doing anything with it. So if
+[03:05] you're live on a show or whatever and you want to have MIDI view in between
+[03:10] just as backup as suddenly you enter like a weird state or something then
+[03:16] you can enable it afterwards so you can see what's going on but during
+[03:21] whatever you're doing you can disable it so you have no lag or no problems
+[03:26] from the software itself. So yeah that's MIDI view it's free head over
+[03:33] to the website download it let me know what you think if you like this
+[03:39] video subscribe like or comment and talk to you later bye bye

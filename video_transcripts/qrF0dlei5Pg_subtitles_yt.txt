@@ -1,0 +1,113 @@
+[00:01] hey welcome to this tutorial about midi
+[00:04] shift
+[00:05] today i'm going to show you how the
+[00:07] application works so
+[00:09] midi shift is a cool little program
+[00:12] that instantly doubles the amount of
+[00:15] midi devices you have
+[00:16] so we're just giving up one button on
+[00:19] your device
+[00:20] um we're able to make like two
+[00:23] virtual devices um and switch the output
+[00:27] of your device between those
+[00:29] virtual outputs i'm at this little
+[00:33] scheme so you can see how it works
+[00:37] so your midi device in this case i have
+[00:40] an apc 4d setup
+[00:42] uh it's gonna connect with uh midi shift
+[00:45] and midi shift is gonna create
+[00:47] two virtual ports um
+[00:50] and by toggling the shift button
+[00:54] um i'm choosing which output i wanna use
+[00:57] so
+[00:58] that gives us a few cool
+[01:01] options to do with it so i'm going to
+[01:04] talk about that later
+[01:06] um so first of all you'll see
+[01:10] a drop down with the available devices
+[01:13] in this case it's going to be my apc 40
+[01:15] mk 2 i'm connected with um
+[01:19] and currently nothing has happened
+[01:21] because the program itself just doesn't
+[01:24] do anything
+[01:26] um then over here
+[01:29] you can see that i'm able to remove the
+[01:32] current
+[01:33] shift key and now it's asking me to
+[01:35] press
+[01:36] a midi key to set as a shift
+[01:40] so in this case um i'm gonna pick
+[01:45] let's do this one so here now
+[01:48] it found the key so it's a d6
+[01:52] on channel 1 and you see that
+[01:56] it's already shifting the next button
+[01:59] i'm having here is to change the mode so
+[02:03] i can either set it to flash
+[02:05] so in flash mode i have to hold the
+[02:07] button
+[02:08] to erase the shift
+[02:11] or toggle and in toggle mode it's just a
+[02:14] press
+[02:15] and every press toggles the shift mode
+[02:19] so the next button goes
+[02:23] has to do with with what has to be
+[02:25] shifted
+[02:26] so you can either shift like everything
+[02:29] currently everything is shifted
+[02:31] except from the shift button or you can
+[02:35] make a custom list like for instance say
+[02:38] you only want this top
+[02:41] area to be shifted
+[02:44] then you click on list you click on
+[02:47] learn
+[02:48] and you can learn
+[02:53] the buttons that you want to shift so
+[02:55] this is your collection of shifted
+[02:57] buttons
+[02:58] so now only these buttons will be
+[03:01] shifted
+[03:02] but for this example i'll shift
+[03:04] everything
+[03:05] um so to give you an idea of how this
+[03:09] works
+[03:10] in practice i'm gonna start resolume
+[03:13] arena
+[03:17] i already made like a a setup
+[03:21] um so the first thing to notice is that
+[03:25] we're not
+[03:26] connecting directly to the apc 40
+[03:30] but we have as i said like two virtual
+[03:34] ports midi shift one midi shift two um
+[03:37] resolume already detected that it's a
+[03:39] pc40 because
+[03:41] it's it's just tunneling the software is
+[03:42] just tunneling the messages
+[03:47] and um i made a setup
+[03:51] so the first
+[03:54] normal page or the non-shifted page
+[03:58] is just for selecting the clips um
+[04:01] and on the other hand
+[04:05] i made the shift and as you can see
+[04:08] that's
+[04:09] kind of cool it's and the software
+[04:12] stores the messages it's get so
+[04:16] as soon as you press shift you will see
+[04:18] like
+[04:19] the other colors it's updating
+[04:20] everything uh to the
+[04:22] console itself um and here
+[04:26] i added another functionality
+[04:29] so you can either do like
+[04:32] uh extend the functionality for your
+[04:35] program
+[04:36] or you could for instance
+[04:39] control with your regular
+[04:42] device for instance resolume and
+[04:45] with the shift connecting another
+[04:47] program like ableton
+[04:49] so midi shift this way you're able to
+[04:53] double the functionality of your
+[04:55] controller and
+[04:57] split them into two virtual
+[05:00] devices all right that's it
+[05:03] see you next time
