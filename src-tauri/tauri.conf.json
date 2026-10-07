@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "identifier": "com.totopo.midicontrol",
   "build": {
-    "frontendDist": "../",
+    "frontendDist": "../dist",
     "devUrl": "http://localhost:3000"
   },
   "app": {
@@ -23,7 +23,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["msi"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

@@ -5,3 +5,4 @@ __pycache__/
 .atl/
 "hexgrid-workspace 06-10-2026/hexgrid-workspace/node_modules/"
 src-tauri/target/
+dist/
