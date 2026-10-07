@@ -470,6 +470,138 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
+        /* --- MAPPING MATRIX & DETAIL INSPECTOR (MIDI LEARN) --- */
+        .mapping-workspace {
+            display: flex;
+            gap: 14px;
+            flex: 1;
+            min-height: 440px;
+        }
+
+        .mapping-workspace.hidden {
+            display: none !important;
+        }
+
+        .matrix-table-wrap {
+            flex: 1;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-hairline);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: var(--shadow-panel);
+        }
+
+        .matrix-toolbar {
+            padding: 8px 14px;
+            background: var(--bg-table-header);
+            border-top: 1px solid var(--border-hairline);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-mini {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-hairline);
+            color: var(--text-primary);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-mini:hover {
+            border-color: var(--accent-cyan);
+        }
+
+        .inspector-card {
+            width: 320px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-hairline);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: var(--shadow-panel);
+        }
+
+        .inspector-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.78rem;
+        }
+
+        .inspector-row label {
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+        }
+
+        .inspector-row input, .inspector-row select {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-hairline);
+            color: var(--text-primary);
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            outline: none;
+        }
+        .inspector-row input:focus, .inspector-row select:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-learn-cta {
+            width: 100%;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-hairline);
+            color: var(--text-primary);
+            padding: 8px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.78rem;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-learn-cta:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+        .btn-learn-cta.active-learning {
+            background: #b45309;
+            color: #ffffff;
+            border-color: #f59e0b;
+            animation: pulse-learn-btn 1.2s infinite;
+        }
+        @keyframes pulse-learn-btn {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        .curve-box-mini {
+            height: 80px;
+            background: #090d16;
+            border: 1px solid var(--border-hairline);
+            border-radius: 4px;
+            position: relative;
+        }
+        .curve-box-mini svg {
+            width: 100%;
+            height: 100%;
+        }
+
         /* --- MONITORS WORKSPACE & DATA TABLES --- */
         .monitors-workspace {
             display: flex;
@@ -697,6 +829,7 @@
         <button class="tab-btn active" id="tab-midi">MIDI MONITOR</button>
         <button class="tab-btn" id="tab-osc">OSC MONITOR</button>
         <button class="tab-btn" id="tab-dual">VISTA DUAL (MIDI + OSC)</button>
+        <button class="tab-btn" id="tab-mapping">MAPPING MATRIX &amp; LEARN</button>
     </nav>
 
     <!-- MONITORS WORKSPACE -->
@@ -753,6 +886,131 @@
             </div>
         </section>
     </main>
+
+    <!-- MAPPING MATRIX & DETAIL INSPECTOR (MIDI LEARN) WORKSPACE -->
+    <section class="mapping-workspace hidden" id="panel-mapping">
+        <!-- Tabla Matriz de Mapeo -->
+        <div class="matrix-table-wrap">
+            <div class="stream-header">
+                <span class="stream-header-title">CONTROL MAPPING MATRIX (REGLAS ACTIVAS)</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--accent-cyan);" id="mapping-counter">3 REGLAS</span>
+            </div>
+            <div class="table-viewport" style="max-height: 400px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">ID</th>
+                            <th style="width: 40px;">ACT</th>
+                            <th>TIPO ENTRADA</th>
+                            <th>CH</th>
+                            <th>NOTA/CC</th>
+                            <th>VAL</th>
+                            <th>DESTINO</th>
+                            <th>PATH / DIRECCIÓN</th>
+                            <th>CURVA</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matrix-rules-tbody">
+                        <tr class="selected" style="background: rgba(6, 182, 212, 0.12); cursor: pointer;">
+                            <td>1</td>
+                            <td style="color: var(--accent-cyan);">●</td>
+                            <td>CC (Fader)</td>
+                            <td>1</td>
+                            <td>1</td>
+                            <td>127</td>
+                            <td>OSC UDP</td>
+                            <td>/layer/1/opacity</td>
+                            <td>Linear</td>
+                        </tr>
+                        <tr style="cursor: pointer;">
+                            <td>2</td>
+                            <td style="color: var(--led-green);">●</td>
+                            <td>Note (Pad)</td>
+                            <td>1</td>
+                            <td>60</td>
+                            <td>100</td>
+                            <td>MIDI Virtual</td>
+                            <td>Ch 2 / Note 60</td>
+                            <td>Toggle</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="matrix-toolbar">
+                <button class="btn-mini" id="btn-add-rule">+ AGREGAR REGLA</button>
+                <button class="btn-mini" id="btn-del-rule">− ELIMINAR</button>
+            </div>
+        </div>
+
+        <!-- Inspector Lateral & MIDI Learn -->
+        <div class="inspector-card">
+            <div class="stream-header-title" style="color: var(--accent-cyan); border-bottom: 1px solid var(--border-hairline); padding-bottom: 6px;">
+                INSPECTOR DE REGLA
+            </div>
+
+            <div class="inspector-row">
+                <label>HABILITADO:</label>
+                <input type="checkbox" id="map-enabled" checked>
+            </div>
+
+            <!-- Botón MIDI LEARN Enlazado a WebSocket -->
+            <button class="btn-learn-cta" id="btn-midi-learn">
+                <span>🔍</span>
+                <span id="learn-btn-label">MIDI LEARN (OFF)</span>
+            </button>
+
+            <div class="inspector-row">
+                <label>TIPO ENTRADA:</label>
+                <select id="map-input-type">
+                    <option value="cc">Control Change (CC)</option>
+                    <option value="note">Midi Note (On/Off)</option>
+                    <option value="pitchbend">Pitch Bend</option>
+                </select>
+            </div>
+
+            <div class="inspector-row">
+                <label>CANAL MIDI:</label>
+                <input type="number" id="map-channel" value="1" min="1" max="16" style="width: 70px;">
+            </div>
+
+            <div class="inspector-row">
+                <label>NOTA / CC:</label>
+                <input type="number" id="map-note-cc" value="1" min="0" max="127" style="width: 70px;">
+            </div>
+
+            <div style="border-top: 1px solid var(--border-hairline); margin: 4px 0;"></div>
+
+            <div class="inspector-row">
+                <label>DESTINO:</label>
+                <select id="map-target-protocol">
+                    <option value="osc">OSC (UDP)</option>
+                    <option value="midi-virtual">MIDI Virtual Loop</option>
+                </select>
+            </div>
+
+            <div class="inspector-row">
+                <label>DIRECCIÓN/PATH:</label>
+                <input type="text" id="map-target-path" value="/layer/1/opacity" style="width: 140px;">
+            </div>
+
+            <div class="inspector-row">
+                <label>CURVA FADER:</label>
+                <select id="map-curve">
+                    <option value="linear">Lineal</option>
+                    <option value="exp">Exponencial</option>
+                    <option value="log">Logarítmica</option>
+                    <option value="scurve">S-Curve</option>
+                </select>
+            </div>
+
+            <div class="curve-box-mini">
+                <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <line x1="0" y1="100" x2="100" y2="100" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                    <path id="svg-curve-line" d="M 0 100 L 100 0" fill="none" stroke="var(--accent-cyan)" stroke-width="2"/>
+                </svg>
+            </div>
+        </div>
+    </section>
 
     <script>
         // --- 1. GESTOR DE TEMA CLARO / OSCURO (CON PERSISTENCIA) ---
@@ -818,32 +1076,85 @@
         const tabMidi = document.getElementById('tab-midi');
         const tabOsc = document.getElementById('tab-osc');
         const tabDual = document.getElementById('tab-dual');
+        const tabMapping = document.getElementById('tab-mapping');
         const panelMidi = document.getElementById('panel-midi');
         const panelOsc = document.getElementById('panel-osc');
+        const panelMapping = document.getElementById('panel-mapping');
 
         function setView(mode) {
             tabMidi.classList.remove('active');
             tabOsc.classList.remove('active');
             tabDual.classList.remove('active');
+            tabMapping.classList.remove('active');
+
+            panelMidi.classList.add('hidden');
+            panelOsc.classList.add('hidden');
+            panelMapping.classList.add('hidden');
 
             if (mode === 'midi') {
                 tabMidi.classList.add('active');
                 panelMidi.classList.remove('hidden');
-                panelOsc.classList.add('hidden');
             } else if (mode === 'osc') {
                 tabOsc.classList.add('active');
-                panelMidi.classList.add('hidden');
                 panelOsc.classList.remove('hidden');
             } else if (mode === 'dual') {
                 tabDual.classList.add('active');
                 panelMidi.classList.remove('hidden');
                 panelOsc.classList.remove('hidden');
+            } else if (mode === 'mapping') {
+                tabMapping.classList.add('active');
+                panelMapping.classList.remove('hidden');
             }
         }
 
         tabMidi.addEventListener('click', () => setView('midi'));
         tabOsc.addEventListener('click', () => setView('osc'));
         tabDual.addEventListener('click', () => setView('dual'));
+        tabMapping.addEventListener('click', () => setView('mapping'));
+
+        // LÓGICA DE MIDI LEARN VINCULADA AL WEBSOCKET
+        let isLearningActive = false;
+        const btnMidiLearn = document.getElementById('btn-midi-learn');
+        const learnBtnLabel = document.getElementById('learn-btn-label');
+        const mapInputType = document.getElementById('map-input-type');
+        const mapChannel = document.getElementById('map-channel');
+        const mapNoteCc = document.getElementById('map-note-cc');
+
+        btnMidiLearn.addEventListener('click', () => {
+            isLearningActive = !isLearningActive;
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'set_midi_learn',
+                    enabled: isLearningActive,
+                    target: 'mapping_inspector'
+                }));
+            }
+            updateLearnButtonUI(isLearningActive);
+        });
+
+        function updateLearnButtonUI(active) {
+            isLearningActive = active;
+            if (active) {
+                btnMidiLearn.classList.add('active-learning');
+                learnBtnLabel.textContent = 'ESCUCHANDO SEÑAL...';
+            } else {
+                btnMidiLearn.classList.remove('active-learning');
+                learnBtnLabel.textContent = 'MIDI LEARN (OFF)';
+            }
+        }
+
+        // Curva Fader interactiva en Inspector
+        const mapCurve = document.getElementById('map-curve');
+        const svgCurveLine = document.getElementById('svg-curve-line');
+        if (mapCurve && svgCurveLine) {
+            mapCurve.addEventListener('change', () => {
+                const c = mapCurve.value;
+                if (c === 'linear') svgCurveLine.setAttribute('d', 'M 0 100 L 100 0');
+                else if (c === 'exp') svgCurveLine.setAttribute('d', 'M 0 100 Q 75 90 100 0');
+                else if (c === 'log') svgCurveLine.setAttribute('d', 'M 0 100 Q 25 10 100 0');
+                else if (c === 'scurve') svgCurveLine.setAttribute('d', 'M 0 100 C 40 100 60 0 100 0');
+            });
+        }
 
         // Selectores de Dispositivos y Modos
         const selectMidiIn = document.getElementById('select-midi-in');
@@ -947,7 +1258,13 @@
             try {
                 const payload = JSON.parse(event.data);
                 if (payload.type === 'telemetry') {
-                    handleTelemetry(payload.data);
+                    if (payload.data && payload.data.type === 'midi_learn_captured') {
+                        handleMidiLearnCaptured(payload.data.binding);
+                    } else {
+                        handleTelemetry(payload.data);
+                    }
+                } else if (payload.type === 'midi_learn_status') {
+                    updateLearnButtonUI(payload.active);
                 } else if (payload.type === 'device_inventory') {
                     updateDeviceDropdowns(payload);
                 } else if (payload.type === 'bypass_status') {
@@ -957,6 +1274,30 @@
                 console.error('Error parseando telemetría:', err);
             }
         };
+
+        function handleMidiLearnCaptured(binding) {
+            if (!binding) return;
+            // Actualizar campos del inspector automáticamente
+            if (binding.type === 'note') {
+                mapInputType.value = 'note';
+            } else if (binding.type === 'cc') {
+                mapInputType.value = 'cc';
+            }
+            if (binding.channel !== undefined) mapChannel.value = binding.channel;
+            if (binding.index !== undefined) mapNoteCc.value = binding.index;
+
+            updateLearnButtonUI(false);
+
+            // Destello visual de confirmación en el inspector
+            btnMidiLearn.style.backgroundColor = 'var(--led-green)';
+            btnMidiLearn.style.color = '#fff';
+            learnBtnLabel.textContent = `¡CAPTURADO: ${binding.type.toUpperCase()} CH ${binding.channel} #${binding.index}!`;
+            setTimeout(() => {
+                btnMidiLearn.style.backgroundColor = '';
+                btnMidiLearn.style.color = '';
+                updateLearnButtonUI(false);
+            }, 1800);
+        }
 
         function handleTelemetry(data) {
             if (data.protocol === 'osc') {

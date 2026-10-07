@@ -59,12 +59,15 @@
             justify-content: space-between;
             align-items: center;
             height: 52px;
+            position: relative;
+            z-index: 10;
         }
 
         .device-badge-selector {
             display: flex;
             align-items: center;
             gap: 10px;
+            position: relative;
         }
 
         .device-dropdown-btn {
@@ -91,6 +94,100 @@
 
         .device-dropdown-btn:active {
             transform: scale(0.98);
+        }
+
+        /* SUBMENÚ FLOTANTE DE HARDWARE DISPONIBLE */
+        .device-menu-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            background: #141b2b;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65);
+            width: 320px;
+            overflow: hidden;
+            z-index: 100;
+            animation: menuFadeIn 0.14s ease-out;
+        }
+
+        .device-menu-dropdown.open {
+            display: block;
+        }
+
+        @keyframes menuFadeIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .device-menu-header {
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .device-menu-list {
+            list-style: none;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+
+        .device-menu-item {
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            transition: background 0.1s ease;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+        }
+
+        .device-menu-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .device-menu-item.active {
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .device-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .device-item-name {
+            color: var(--text-main);
+        }
+
+        .device-menu-item.active .device-item-name {
+            color: var(--accent-green);
+        }
+
+        .device-item-port {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+        }
+
+        .device-badge-active-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 6px var(--accent-green);
         }
 
         .window-title {
@@ -406,10 +503,21 @@
     <header class="window-header">
         <div class="device-badge-selector">
             <button class="device-dropdown-btn" id="btn-device-select" title="Seleccionar controlador activo">
-                <span>LAUNCHPAD S 2</span>
+                <span id="active-device-name">LAUNCHPAD S 2</span>
                 <span style="font-size: 0.65rem;">▼</span>
             </button>
-            <span class="badge-live-tag">PUERTO VIRTUAL CONECTADO</span>
+            <span class="badge-live-tag" id="device-status-tag">PUERTO ENLAZADO</span>
+
+            <!-- SUBMENÚ FLOTANTE: HARDWARE DISPONIBLE -->
+            <div class="device-menu-dropdown" id="device-menu-dropdown">
+                <div class="device-menu-header">
+                    <span>Hardware MIDI detectado</span>
+                    <span style="color: var(--accent-green); cursor: pointer;" id="btn-refresh-hardware" title="Volver a escanear">↻ SCAN</span>
+                </div>
+                <ul class="device-menu-list" id="device-menu-list">
+                    <!-- Los items de hardware se renderizan con JS -->
+                </ul>
+            </div>
         </div>
 
         <div class="window-title">
@@ -758,6 +866,62 @@
 
         // INIT
         selectRule(5);
+
+        // --- SUBMENÚ DE DISPOSITIVOS HARDWARE DISPONIBLES ---
+        const hardwareDevices = [
+            { id: "launchpad_s2", name: "LAUNCHPAD S 2", port: "USB Audio Device (Port 1)", isDefault: true },
+            { id: "arturia_minilab", name: "Arturia MiniLab 3", port: "MIDIIN2 (MiniLab 3 MIDI)", isDefault: false },
+            { id: "loopmidi_proxy", name: "Hexgrid Virtual Proxy", port: "Virtual Internal Bus", isDefault: false },
+            { id: "akai_apc40", name: "Akai APC40 mkII", port: "USB MIDI Port 1", isDefault: false },
+            { id: "korg_nanokontrol", name: "Korg nanoKONTROL2", port: "SLIDER/KNOB Bus", isDefault: false }
+        ];
+
+        let currentActiveDevice = hardwareDevices[0];
+
+        const btnDeviceSelect = document.getElementById('btn-device-select');
+        const activeDeviceName = document.getElementById('active-device-name');
+        const deviceMenuDropdown = document.getElementById('device-menu-dropdown');
+        const deviceMenuList = document.getElementById('device-menu-list');
+
+        function renderHardwareMenu() {
+            deviceMenuList.innerHTML = '';
+            hardwareDevices.forEach(dev => {
+                const li = document.createElement('li');
+                li.className = 'device-menu-item' + (dev.id === currentActiveDevice.id ? ' active' : '');
+                li.innerHTML = `
+                    <div class="device-item-info">
+                        <span class="device-item-name">${dev.name}</span>
+                        <span class="device-item-port">${dev.port}</span>
+                    </div>
+                    ${dev.id === currentActiveDevice.id ? '<span class="device-badge-active-dot"></span>' : ''}
+                `;
+                li.onclick = (e) => {
+                    e.stopPropagation();
+                    selectHardwareDevice(dev);
+                };
+                deviceMenuList.appendChild(li);
+            });
+        }
+
+        function selectHardwareDevice(dev) {
+            currentActiveDevice = dev;
+            activeDeviceName.textContent = dev.name;
+            deviceMenuDropdown.classList.remove('open');
+            renderHardwareMenu();
+        }
+
+        btnDeviceSelect.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deviceMenuDropdown.classList.toggle('open');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!deviceMenuDropdown.contains(e.target) && e.target !== btnDeviceSelect) {
+                deviceMenuDropdown.classList.remove('open');
+            }
+        });
+
+        renderHardwareMenu();
     </script>
 </body>
 </html>
