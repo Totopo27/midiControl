@@ -119,7 +119,7 @@ Corre como un puente de escenario en segundo plano o consola:
 
 ---
 
-## Resultados de las Compuertas Técnicas (Gates 1 al 8 + E2E + Live Bridge)
+## Resultados de las Compuertas Técnicas (Gates 1 al 8 + E2E + Live Bridge + Auditoría Hub & Spoke)
 
 | Compuerta | Módulo evaluado | Criterio de aceptación | Medición obtenida | Estado |
 | :--- | :--- | :--- | :--- | :--- |
@@ -133,6 +133,11 @@ Corre como un puente de escenario en segundo plano o consola:
 | **Gate 8** | Virtual Loopback Proxy | Intermediación bidireccional DAW <-> Hardware sin colisión | Flujo bidireccional 100% íntegro; 0 notas pegadas | **PASS** |
 | **E2E** | Integración Teclados-Wilson | Flujo completo WebSocket iPad -> midiControl -> Hardware/OSC | Acordes EDO-53 procesados sin latencia | **PASS** |
 | **Live Bridge** | Daemon & Hot-Plug Watchdog | Operación autónoma sin HTTP; auto-reconexión y pánico | Proxy activo, watchdog en ciclo y pánico limpio | **PASS** |
+| **Audit F1** | Seguridad Red & OSC | Path traversal bloqueado con 403, WS robusto, OSC pad4 | Blindaje verificado ante NaN/null y aislamiento de ruteo | **PASS** |
+| **Audit F2** | Estado MIDI & Anti-Stuck | Cero notas pegadas, purga en pánico físico y virtual | 64 voces rastreadas; purga a 0 en hardware y DAW | **PASS** |
+| **Audit F3** | Frontend DOM & Anti-XSS | Erradicación total de `innerHTML` en streams y tablas | DOM API seguro (`textContent`) y buffer circular (100 filas) | **PASS** |
+| **Audit F4** | Desktop & Tauri v2 Hardening | CSP estricto configurado, mínimo privilegio IPC | `default-src 'self'`, WS local explícito, zero unwrap | **PASS** |
+| **Audit F5** | Cadena de Suministro & Secretos | Cero vulnerabilidades en dependencias y `.gitignore` | `npm audit` limpio (0 vulns), exclusión de `.env` y keys | **PASS** |
 
 ---
 
