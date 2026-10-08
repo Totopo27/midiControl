@@ -728,17 +728,42 @@
                 }
                 tr.onclick = () => selectRule(rule.id);
 
-                tr.innerHTML = `
-                    <td>${rule.id}</td>
-                    <td>${rule.value || ''}</td>
-                    <td>${rule.description}</td>
-                    <td>${rule.inputType}</td>
-                    <td>${rule.shortcut}</td>
-                    <td>${rule.channel}</td>
-                    <td>${rule.note}</td>
-                    <td>${rule.delay}</td>
-                    <td>${rule.trigger}</td>
-                `;
+                const tdId = document.createElement('td');
+                tdId.textContent = String(rule.id);
+
+                const tdVal = document.createElement('td');
+                tdVal.textContent = rule.value || '';
+
+                const tdDesc = document.createElement('td');
+                tdDesc.textContent = rule.description;
+
+                const tdType = document.createElement('td');
+                tdType.textContent = rule.inputType;
+
+                const tdShortcut = document.createElement('td');
+                tdShortcut.textContent = rule.shortcut;
+
+                const tdCh = document.createElement('td');
+                tdCh.textContent = String(rule.channel);
+
+                const tdNote = document.createElement('td');
+                tdNote.textContent = String(rule.note);
+
+                const tdDelay = document.createElement('td');
+                tdDelay.textContent = String(rule.delay);
+
+                const tdTrigger = document.createElement('td');
+                tdTrigger.textContent = rule.trigger;
+
+                tr.appendChild(tdId);
+                tr.appendChild(tdVal);
+                tr.appendChild(tdDesc);
+                tr.appendChild(tdType);
+                tr.appendChild(tdShortcut);
+                tr.appendChild(tdCh);
+                tr.appendChild(tdNote);
+                tr.appendChild(tdDelay);
+                tr.appendChild(tdTrigger);
                 tbody.appendChild(tr);
             });
         }
@@ -964,13 +989,28 @@
             hardwareDevices.forEach(dev => {
                 const li = document.createElement('li');
                 li.className = 'device-menu-item' + (currentActiveDevice && dev.id === currentActiveDevice.id ? ' active' : '');
-                li.innerHTML = `
-                    <div class="device-item-info">
-                        <span class="device-item-name">${dev.name}</span>
-                        <span class="device-item-port">${dev.port}</span>
-                    </div>
-                    ${currentActiveDevice && dev.id === currentActiveDevice.id ? '<span class="device-badge-active-dot"></span>' : ''}
-                `;
+                
+                const divInfo = document.createElement('div');
+                divInfo.className = 'device-item-info';
+
+                const spanName = document.createElement('span');
+                spanName.className = 'device-item-name';
+                spanName.textContent = dev.name;
+
+                const spanPort = document.createElement('span');
+                spanPort.className = 'device-item-port';
+                spanPort.textContent = dev.port;
+
+                divInfo.appendChild(spanName);
+                divInfo.appendChild(spanPort);
+                li.appendChild(divInfo);
+
+                if (currentActiveDevice && dev.id === currentActiveDevice.id) {
+                    const badge = document.createElement('span');
+                    badge.className = 'device-badge-active-dot';
+                    li.appendChild(badge);
+                }
+
                 li.onclick = (e) => {
                     e.stopPropagation();
                     selectHardwareDevice(dev);

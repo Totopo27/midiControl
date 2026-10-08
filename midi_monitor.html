@@ -1383,18 +1383,49 @@
             const timeStr = new Date(data.timestamp || Date.now()).toISOString().split('T')[1].replace('Z', '');
             const direction = data.dir || 'out';
             const msgDesc = data.description || (data.event.toUpperCase() + (data.note !== undefined ? ' ' + data.note : ''));
-            const valDisplay = data.velocity !== undefined ? data.velocity : '-';
+            const valDisplay = String(data.velocity !== undefined ? data.velocity : '-');
             const hexDisplay = data.hex || (data.event === 'noteon' ? '9' + (data.channel-1).toString(16) + ' ' + (data.note).toString(16) : '-');
+            const targetName = data.midiStatus?.name || 'Local';
 
-            tr.innerHTML = `
-                <td style="color: var(--text-muted);">${timeStr}</td>
-                <td style="color: ${direction === 'in' ? 'var(--accent-cyan)' : 'var(--led-green)'}; font-weight: 700;">${direction}</td>
-                <td style="color: var(--text-primary); font-weight: 600;">${msgDesc}</td>
-                <td style="font-weight: 600; color: var(--accent-cyan);">${data.channel || 1}</td>
-                <td style="color: var(--text-primary); font-weight: 700;">${valDisplay}</td>
-                <td style="color: var(--text-muted);">${hexDisplay}</td>
-                <td style="color: var(--text-dim);">${data.midiStatus?.name || 'Local'}</td>
-            `;
+            const tdTime = document.createElement('td');
+            tdTime.style.color = 'var(--text-muted)';
+            tdTime.textContent = timeStr;
+
+            const tdDir = document.createElement('td');
+            tdDir.style.color = direction === 'in' ? 'var(--accent-cyan)' : 'var(--led-green)';
+            tdDir.style.fontWeight = '700';
+            tdDir.textContent = direction;
+
+            const tdDesc = document.createElement('td');
+            tdDesc.style.color = 'var(--text-primary)';
+            tdDesc.style.fontWeight = '600';
+            tdDesc.textContent = msgDesc;
+
+            const tdCh = document.createElement('td');
+            tdCh.style.fontWeight = '600';
+            tdCh.style.color = 'var(--accent-cyan)';
+            tdCh.textContent = String(data.channel || 1);
+
+            const tdVal = document.createElement('td');
+            tdVal.style.color = 'var(--text-primary)';
+            tdVal.style.fontWeight = '700';
+            tdVal.textContent = valDisplay;
+
+            const tdHex = document.createElement('td');
+            tdHex.style.color = 'var(--text-muted)';
+            tdHex.textContent = hexDisplay;
+
+            const tdTarget = document.createElement('td');
+            tdTarget.style.color = 'var(--text-dim)';
+            tdTarget.textContent = targetName;
+
+            tr.appendChild(tdTime);
+            tr.appendChild(tdDir);
+            tr.appendChild(tdDesc);
+            tr.appendChild(tdCh);
+            tr.appendChild(tdVal);
+            tr.appendChild(tdHex);
+            tr.appendChild(tdTarget);
 
             tbody.insertBefore(tr, tbody.firstChild);
 
@@ -1417,15 +1448,46 @@
             const direction = data.dir || 'out';
             const latUs = data.durationUs || 0;
 
-            tr.innerHTML = `
-                <td style="color: var(--text-muted);">${timeStr}</td>
-                <td style="color: var(--accent-violet); font-weight: 700;">${direction}</td>
-                <td style="color: var(--accent-cyan); font-weight: 600;">${data.path}</td>
-                <td style="color: var(--text-muted); font-weight: 600;">${data.types}</td>
-                <td style="color: var(--text-primary); font-weight: 600;">${data.args}</td>
-                <td style="color: var(--led-green); font-weight: 600;">${latUs.toFixed(1)} µs</td>
-                <td style="color: var(--text-dim);">${data.target}</td>
-            `;
+            const tdTime = document.createElement('td');
+            tdTime.style.color = 'var(--text-muted)';
+            tdTime.textContent = timeStr;
+
+            const tdDir = document.createElement('td');
+            tdDir.style.color = 'var(--accent-violet)';
+            tdDir.style.fontWeight = '700';
+            tdDir.textContent = direction;
+
+            const tdPath = document.createElement('td');
+            tdPath.style.color = 'var(--accent-cyan)';
+            tdPath.style.fontWeight = '600';
+            tdPath.textContent = String(data.path || '');
+
+            const tdTypes = document.createElement('td');
+            tdTypes.style.color = 'var(--text-muted)';
+            tdTypes.style.fontWeight = '600';
+            tdTypes.textContent = String(data.types || '');
+
+            const tdArgs = document.createElement('td');
+            tdArgs.style.color = 'var(--text-primary)';
+            tdArgs.style.fontWeight = '600';
+            tdArgs.textContent = String(data.args || '');
+
+            const tdLat = document.createElement('td');
+            tdLat.style.color = 'var(--led-green)';
+            tdLat.style.fontWeight = '600';
+            tdLat.textContent = `${latUs.toFixed(1)} µs`;
+
+            const tdTarget = document.createElement('td');
+            tdTarget.style.color = 'var(--text-dim)';
+            tdTarget.textContent = String(data.target || '');
+
+            tr.appendChild(tdTime);
+            tr.appendChild(tdDir);
+            tr.appendChild(tdPath);
+            tr.appendChild(tdTypes);
+            tr.appendChild(tdArgs);
+            tr.appendChild(tdLat);
+            tr.appendChild(tdTarget);
 
             oscTbody.insertBefore(tr, oscTbody.firstChild);
 
@@ -1497,17 +1559,55 @@
                 tr.style.cursor = 'pointer';
                 tr.onclick = () => selectMappingRule(rule.id);
 
-                tr.innerHTML = `
-                    <td style="color: var(--text-muted); font-weight: 700;">${rule.id}</td>
-                    <td>${rule.value || '-'}</td>
-                    <td style="color: var(--text-primary); font-weight: 600;">${rule.description}</td>
-                    <td style="color: ${rule.inputType.includes('CC') ? 'var(--accent-cyan)' : 'var(--accent-violet)'};">${rule.inputType}</td>
-                    <td style="color: var(--led-green); font-weight: 600; font-family: 'JetBrains Mono', monospace;">${rule.shortcut}</td>
-                    <td style="font-weight: 600;">${rule.channel}</td>
-                    <td style="font-weight: 700; color: var(--accent-cyan);">${rule.note}</td>
-                    <td style="color: var(--text-muted);">${rule.delay}</td>
-                    <td style="color: var(--text-secondary);">${rule.trigger}</td>
-                `;
+                const tdId = document.createElement('td');
+                tdId.style.color = 'var(--text-muted)';
+                tdId.style.fontWeight = '700';
+                tdId.textContent = String(rule.id);
+
+                const tdVal = document.createElement('td');
+                tdVal.textContent = rule.value || '-';
+
+                const tdDesc = document.createElement('td');
+                tdDesc.style.color = 'var(--text-primary)';
+                tdDesc.style.fontWeight = '600';
+                tdDesc.textContent = rule.description;
+
+                const tdType = document.createElement('td');
+                tdType.style.color = rule.inputType.includes('CC') ? 'var(--accent-cyan)' : 'var(--accent-violet)';
+                tdType.textContent = rule.inputType;
+
+                const tdShortcut = document.createElement('td');
+                tdShortcut.style.color = 'var(--led-green)';
+                tdShortcut.style.fontWeight = '600';
+                tdShortcut.style.fontFamily = "'JetBrains Mono', monospace";
+                tdShortcut.textContent = rule.shortcut;
+
+                const tdCh = document.createElement('td');
+                tdCh.style.fontWeight = '600';
+                tdCh.textContent = String(rule.channel);
+
+                const tdNote = document.createElement('td');
+                tdNote.style.fontWeight = '700';
+                tdNote.style.color = 'var(--accent-cyan)';
+                tdNote.textContent = String(rule.note);
+
+                const tdDelay = document.createElement('td');
+                tdDelay.style.color = 'var(--text-muted)';
+                tdDelay.textContent = String(rule.delay);
+
+                const tdTrigger = document.createElement('td');
+                tdTrigger.style.color = 'var(--text-secondary)';
+                tdTrigger.textContent = rule.trigger;
+
+                tr.appendChild(tdId);
+                tr.appendChild(tdVal);
+                tr.appendChild(tdDesc);
+                tr.appendChild(tdType);
+                tr.appendChild(tdShortcut);
+                tr.appendChild(tdCh);
+                tr.appendChild(tdNote);
+                tr.appendChild(tdDelay);
+                tr.appendChild(tdTrigger);
                 matrixRulesTbody.appendChild(tr);
             });
             if (mappingCounter) mappingCounter.textContent = `${mappingRules.length} REGLAS`;
