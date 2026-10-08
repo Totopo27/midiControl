@@ -8,3 +8,11 @@ src-tauri/target/
 dist/
 video_transcripts/*.mp3
 video_transcripts/*.webm
+
+# Archivos de entorno y credenciales sensibles (SEC-018)
+.env
+.env.*
+*.pem
+*.key
+*.cert
+*.pfx

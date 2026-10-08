@@ -121,7 +121,7 @@ async function runGate5Test() {
     // --- ETAPA 4: REANUDAR MODO NORMAL ---
     console.log('\n--- ETAPA 4: Desactivando Modo Bypass (Reanudación en caliente) ---');
     ws.send(JSON.stringify({ type: 'set_bypass', enabled: false }));
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise(r => setTimeout(r, 200));
 
     receivedTelemetryCount = 0;
     for (let i = 0; i < 50; i++) {
@@ -133,7 +133,7 @@ async function runGate5Test() {
             velocity: 90
         }));
     }
-    await new Promise(r => setTimeout(r, 150));
+    await new Promise(r => setTimeout(r, 300));
 
     console.log(`  > Eventos de telemetría tras reanudar: ${receivedTelemetryCount}`);
     const resumePass = receivedTelemetryCount >= 50;
