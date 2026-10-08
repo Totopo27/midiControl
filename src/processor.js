@@ -303,6 +303,54 @@ class StreamProcessor {
         }
     }
 
+    dispatchRawOsc(buffer, targetHost = null, targetPort = null, sourceRoute = 'app_a') {
+        const startTime = process.hrtime.bigint();
+        
+        // Validar buffer binario
+        if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+            return { status: 'invalid_buffer', reason: 'Buffer binario inválido o vacío' };
+        }
+
+        // Respetar permisos de la Matriz de Ruteo
+        if (!this.midiRouter.isRouteAllowed(sourceRoute, 'osc')) {
+            return { status: 'blocked_by_routing_matrix', reason: `Aislamiento activo: ${sourceRoute} -> osc bloqueado` };
+        }
+
+        const host = targetHost || this.oscTargets[0]?.host || '127.0.0.1';
+        const port = targetPort || this.oscTargets[0]?.port || 57120;
+
+        try {
+            this.udpClient.send(buffer, 0, buffer.length, port, host);
+        } catch (err) {
+            return { status: 'error', reason: err.message };
+        }
+
+        const endTime = process.hrtime.bigint();
+        const durationUs = Number(endTime - startTime) / 1000;
+
+        // Extraer dirección OSC aproximada si los primeros bytes son string
+        let address = '/raw';
+        try {
+            const nullIdx = buffer.indexOf(0);
+            if (nullIdx > 0 && buffer[0] === 47 /* '/' */) {
+                address = buffer.subarray(0, nullIdx).toString('utf-8');
+            }
+        } catch (_) {}
+
+        this.notify({
+            protocol: 'osc',
+            dir: 'out',
+            path: address,
+            types: ',raw',
+            args: `[${buffer.length} bytes]`,
+            target: `${host}:${port}`,
+            durationUs,
+            timestamp: Date.now()
+        });
+
+        return { status: 'sent', bytes: buffer.length, target: `${host}:${port}` };
+    }
+
     panic() {
         this.midiRouter.panic();
         if (this.virtualProxy) {

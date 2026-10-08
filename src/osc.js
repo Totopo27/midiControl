@@ -10,29 +10,38 @@ function pad4(buffer) {
 }
 
 function writeString(str) {
-    const strBuf = Buffer.from(str + '\0', 'utf-8');
+    const cleanStr = String(str || '');
+    const strBuf = Buffer.from(cleanStr + '\0', 'utf-8');
     return pad4(strBuf);
 }
 
 function encodeOSCMessage(address, typeTag, args) {
+    if (typeof address !== 'string' || !address.startsWith('/')) {
+        throw new Error('Dirección OSC inválida: debe ser string iniciando con "/"');
+    }
+    const safeTypeTag = typeof typeTag === 'string' ? typeTag : '';
+    const safeArgs = Array.isArray(args) ? args : [];
+
     const addressBuf = writeString(address);
-    const typeTagBuf = writeString(',' + typeTag);
+    const typeTagBuf = writeString(',' + safeTypeTag);
     const argsBuffers = [];
 
-    for (let i = 0; i < typeTag.length; i++) {
-        const type = typeTag[i];
-        const val = args[i];
+    for (let i = 0; i < safeTypeTag.length; i++) {
+        const type = safeTypeTag[i];
+        const val = safeArgs[i];
 
         if (type === 'f') {
             const buf = Buffer.alloc(4);
-            buf.writeFloatBE(parseFloat(val), 0);
+            const num = parseFloat(val);
+            buf.writeFloatBE(isNaN(num) ? 0.0 : num, 0);
             argsBuffers.push(buf);
         } else if (type === 'i') {
             const buf = Buffer.alloc(4);
-            buf.writeInt32BE(parseInt(val, 10), 0);
+            const num = parseInt(val, 10);
+            buf.writeInt32BE(isNaN(num) ? 0 : num, 0);
             argsBuffers.push(buf);
         } else if (type === 's') {
-            argsBuffers.push(writeString(String(val)));
+            argsBuffers.push(writeString(String(val !== undefined && val !== null ? val : '')));
         }
     }
 

@@ -254,6 +254,20 @@ class LiveSentinelApp {
                         }
                     } else if (msg.type === 'panic') {
                         this.processor.panic();
+                    } else if (msg.type === 'osc') {
+                        // Enrutamiento seguro y encapsulado de paquetes OSC crudos
+                        if (msg.message) {
+                            try {
+                                const oscBuf = Buffer.isBuffer(msg.message) 
+                                    ? msg.message 
+                                    : Buffer.from(Array.isArray(msg.message) || typeof msg.message === 'string' ? msg.message : []);
+                                const targetIp = typeof msg.ip === 'string' ? msg.ip : null;
+                                const targetPort = !isNaN(parseInt(msg.port, 10)) ? parseInt(msg.port, 10) : null;
+                                this.processor.dispatchRawOsc(oscBuf, targetIp, targetPort, msg.appId || 'app_a');
+                            } catch (err) {
+                                // Ignorar silenciosamente paquetes corruptos sin tumbar el WebSocket
+                            }
+                        }
                     }
                 } catch (e) {
                     // Ignorar silenciosamente mensajes malformados sin tumbar el WebSocket
