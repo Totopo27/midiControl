@@ -293,12 +293,21 @@ class VirtualMidiProxy {
     panic() {
         if (!this.widgetOut) return;
 
-        for (let ch = 0; ch < 16; ch++) {
-            this.widgetOut.allNotesOff(ch);
-            this.widgetOut.allSoundOff(ch);
-            this.widgetOut.resetAllControllers(ch);
+        for (const [key] of this.activeNotes) {
+            const [ch, n] = key.split('_').map(Number);
+            try {
+                this.widgetOut.noteOff(ch - 1, n);
+            } catch (_) {}
         }
         this.activeNotes.clear();
+
+        for (let ch = 0; ch < 16; ch++) {
+            try {
+                this.widgetOut.allNotesOff(ch);
+                this.widgetOut.allSoundOff(ch);
+                this.widgetOut.resetAllControllers(ch);
+            } catch (_) {}
+        }
     }
 
     _recordLatency(us) {

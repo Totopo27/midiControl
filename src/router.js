@@ -254,18 +254,22 @@ class MidiRouter {
     async panic() {
         if (!this.activeOutput) return;
 
-        // 1. Apagar todas las notas registradas en memoria
+        // 1. Apagar todas las notas registradas en memoria con salvaguarda Note-Off
         for (const [key] of this.activeNotes) {
             const [ch, n] = key.split('_').map(Number);
-            this.activeOutput.noteOff(ch, n);
+            try {
+                this.activeOutput.noteOff(ch, n);
+            } catch (_) {}
         }
         this.activeNotes.clear();
 
         // 2. Enviar comandos MIDI CC 123 (All Notes Off) y CC 120 (All Sound Off) en los 16 canales
         for (let ch = 0; ch < 16; ch++) {
-            this.activeOutput.allNotesOff(ch);
-            this.activeOutput.allSoundOff(ch);
-            this.activeOutput.resetAllControllers(ch);
+            try {
+                this.activeOutput.allNotesOff(ch);
+                this.activeOutput.allSoundOff(ch);
+                this.activeOutput.resetAllControllers(ch);
+            } catch (_) {}
         }
     }
 
