@@ -27,7 +27,13 @@ function getLocalIP() {
 const LOCAL_IP = getLocalIP();
 
 class LiveSentinelApp {
-    constructor() {
+    constructor(options = {}) {
+        this.options = {
+            host: options.host || (options.localOnly ? '127.0.0.1' : '0.0.0.0'),
+            autoReconnect: options.autoReconnect !== false,
+            pollIntervalMs: options.pollIntervalMs || 2500,
+            ...options
+        };
         this.processor = new StreamProcessor();
         this.terminalMonitor = new TerminalMonitor();
         this.terminalMonitor.setSessionRegistry(this.processor.sessionRegistry);
@@ -36,6 +42,9 @@ class LiveSentinelApp {
         this.webClients = new Set();
         this.selectedChannel = 0; // Canal 1 por defecto
         this.isBypass = false; // Modo Rendimiento / Zero-Overhead (desacopla telemetría de UI)
+        this.watchdogTimer = null;
+        this.targetMidiIn = null;
+        this.targetMidiOut = null;
     }
 
     setBypass(enable) {
@@ -84,6 +93,9 @@ class LiveSentinelApp {
         await this.processor.enableVirtualProxy();
         this.processor.addOscTarget('127.0.0.1', targetOscPort);
 
+        this.targetMidiOut = targetMidi;
+        this.targetMidiIn = targetMidiIn;
+
         const outputs = this.processor.midiRouter.listOutputs();
         let portToOpen = targetMidi;
         if (!portToOpen) {
@@ -106,6 +118,10 @@ class LiveSentinelApp {
             } catch (err) {
                 console.warn(`[MIDI] No se pudo abrir entrada "${targetMidiIn}": ${err.message}.`);
             }
+        }
+
+        if (this.options.autoReconnect) {
+            this._startWatchdog();
         }
 
         // Suscribir el monitor de consola
@@ -186,13 +202,16 @@ class LiveSentinelApp {
             });
         });
 
-        this.httpServer.listen(HTTP_PORT, '0.0.0.0', () => {
-            console.log(`[HTTP] Monitor Web disponible: http://${LOCAL_IP}:${HTTP_PORT}`);
+        const bindHost = this.options.host;
+        const displayHost = (bindHost === '0.0.0.0') ? LOCAL_IP : bindHost;
+
+        this.httpServer.listen(HTTP_PORT, bindHost, () => {
+            console.log(`[HTTP] Monitor Web disponible: http://${displayHost}:${HTTP_PORT}`);
         });
 
         // 2. Servidor WebSocket
-        this.wss = new WebSocket.Server({ port: WS_PORT });
-        console.log(`[WS]   Ingesta y Telemetría: ws://${LOCAL_IP}:${WS_PORT}`);
+        this.wss = new WebSocket.Server({ port: WS_PORT, host: bindHost });
+        console.log(`[WS]   Ingesta y Telemetría: ws://${displayHost}:${WS_PORT}`);
 
         this.wss.on('connection', (ws) => {
             this.webClients.add(ws);
@@ -369,7 +388,62 @@ class LiveSentinelApp {
             });
         });
 
-        return { localIP: LOCAL_IP, httpPort: HTTP_PORT, wsPort: WS_PORT };
+        return { localIP: displayHost, httpPort: HTTP_PORT, wsPort: WS_PORT, bindHost };
+    }
+
+    _startWatchdog() {
+        if (this.watchdogTimer) return;
+        this.watchdogTimer = setInterval(async () => {
+            try {
+                const outputs = this.processor.midiRouter.listOutputs();
+                const inputs = this.processor.midiRouter.listInputs();
+
+                const outActive = this.processor.midiRouter.activeOutputName;
+                const inActive = this.processor.midiRouter.activeInputName;
+
+                let stateChanged = false;
+
+                // 1. Verificar salida
+                const outExists = outActive && outputs.some(o => o.name === outActive);
+                if (!outExists) {
+                    let portToOpen = this.targetMidiOut;
+                    if (!portToOpen) {
+                        const usbOut = outputs.find(o => o.name.toLowerCase().includes('usb'));
+                        portToOpen = usbOut ? usbOut.name : (outputs.find(o => !o.name.includes('Wavetable'))?.name || null);
+                    }
+                    if (portToOpen && portToOpen !== outActive) {
+                        try {
+                            await this.processor.midiRouter.openOutput(portToOpen);
+                            console.log(`[WATCHDOG::HW] Salida MIDI reconectada: "${portToOpen}"`);
+                            stateChanged = true;
+                        } catch (_) {}
+                    }
+                }
+
+                // 2. Verificar entrada
+                const inExists = inActive && inputs.some(i => i.name === inActive);
+                if (!inExists) {
+                    let inToOpen = this.targetMidiIn;
+                    if (!inToOpen) {
+                        const usbIn = inputs.find(i => i.name.toLowerCase().includes('usb'));
+                        inToOpen = usbIn ? usbIn.name : (inputs[0]?.name || null);
+                    }
+                    if (inToOpen && inToOpen !== inActive) {
+                        try {
+                            await this.processor.midiRouter.openInput(inToOpen);
+                            console.log(`[WATCHDOG::HW] Entrada MIDI reconectada: "${inToOpen}"`);
+                            stateChanged = true;
+                        } catch (_) {}
+                    }
+                }
+
+                if (stateChanged) {
+                    this.broadcastDeviceInventory();
+                }
+            } catch (_) {
+                // Silenciar errores durante cambio de bus USB
+            }
+        }, this.options.pollIntervalMs);
     }
 
     sendDeviceInventory(ws) {
@@ -400,6 +474,10 @@ class LiveSentinelApp {
     }
 
     close() {
+        if (this.watchdogTimer) {
+            clearInterval(this.watchdogTimer);
+            this.watchdogTimer = null;
+        }
         this.processor.close();
         if (this.httpServer) this.httpServer.close();
         if (this.wss) this.wss.close();
