@@ -105,6 +105,14 @@ npm start
 ```
 Abre la interfaz gráfica en navegador (`http://localhost:3000`) con vistas MIDI, OSC, Dual y Mapping Matrix.
 
+Al correr en terminal interactiva, la consola expone comandos de teclado con modificador de seguridad para evitar disparos accidentales durante la interpretación:
+- **`Alt + P`** (u `Option + P` en macOS): **Pánico Global** (`All Notes Off` inmediato en todos los canales y voces registradas).
+- **`Alt + T`** (u `Option + T` en macOS): Imprime en consola la tabla de telemetría TUI en tiempo real.
+- **`Alt + B`** (u `Option + B` en macOS): Alterna el **Modo Bypass / Zero-Overhead** para silenciar la telemetría web y destinar el 100% de los ciclos al audio.
+- **`Ctrl + C`**: Cierre ordenado y apagado seguro de la estación.
+
+*(Nota: Se utiliza `Alt` en lugar de teclas individuales para que un roce accidental del teclado en el escenario nunca silencie un show).*
+
 #### Opción B: Modo Live Bridge (Enlace Transparente / Cero Interfaz)
 ```bash
 npm run bridge
