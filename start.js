@@ -28,10 +28,10 @@ async function main() {
     console.log('   - Destino OSC por defecto: 127.0.0.1:57120 (SuperCollider)');
     console.log('   - Hot-Plug Watchdog:      ACTIVO (Reconexión automática USB en segundo plano)');
     console.log('\n[Comandos interactivos de consola]:');
-    console.log('   - Presiona [P] para Pánico Global (All Notes Off)');
-    console.log('   - Presiona [T] para ver tabla TUI del monitor en consola');
-    console.log('   - Presiona [B] para conmutar Modo Bypass / Zero-Overhead');
-    console.log('   - Presiona [Ctrl+C] para detener de forma segura\n');
+    console.log('   - [Alt + P]  Pánico Global (All Notes Off multicanal)');
+    console.log('   - [Alt + T]  Ver tabla TUI del monitor en consola');
+    console.log('   - [Alt + B]  Conmutar Modo Bypass / Zero-Overhead');
+    console.log('   - [Ctrl + C] Detener estación de forma segura\n');
 
     if (process.stdin.isTTY) {
         process.stdin.setRawMode(true);
@@ -42,12 +42,22 @@ async function main() {
                 console.log('\n[CERRANDO] Deteniendo estación...');
                 app.close();
                 process.exit(0);
-            } else if (key.toLowerCase() === 'p') {
-                console.log('\n[PÁNICO INTERACTIVO] Disparando All Notes Off multicanal...');
+            }
+
+            // Detección de combinaciones Alt / Option (secuencias ESC + char y símbolos de Option en macOS)
+            // Alt+P: '\u001bp', '\u001bP', o 'π' / '∏' (según layout de macOS)
+            const isAltP = key === '\u001bp' || key === '\u001bP' || key === 'π' || key === '∏';
+            // Alt+T: '\u001bt', '\u001bT', o '†' / 'ˇ'
+            const isAltT = key === '\u001bt' || key === '\u001bT' || key === '†' || key === 'ˇ';
+            // Alt+B: '\u001bb', '\u001bB', o '∫' / 'ı'
+            const isAltB = key === '\u001bb' || key === '\u001bB' || key === '∫' || key === 'ı';
+
+            if (isAltP) {
+                console.log('\n[PÁNICO INTERACTIVO: Alt+P] Disparando All Notes Off multicanal...');
                 app.panic();
-            } else if (key.toLowerCase() === 't') {
+            } else if (isAltT) {
                 app.terminalMonitor.renderTable();
-            } else if (key.toLowerCase() === 'b') {
+            } else if (isAltB) {
                 const newState = !app.isBypass;
                 app.setBypass(newState);
             }
