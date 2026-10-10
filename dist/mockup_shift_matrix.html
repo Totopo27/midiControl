@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup - Matriz & Shift Engine (Sistema MIDI Control)</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card-bg: #161b22;
+            --card-header: #21262d;
+            --text: #c9d1d9;
+            --text-bright: #f0f6fc;
+            --muted: #8b949e;
+            --accent: #58a6ff;
+            --note-on: #3fb950;
+            --note-off: #8b949e;
+            --panic: #f85149;
+            --border: #30363d;
+            --layer-shift: #d29922;
+            --active-glow: rgba(88, 166, 255, 0.25);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* 1. Header principal del sistema */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.4rem;
+            color: var(--text-bright);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .device-select {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-bright);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .device-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Botones estándar */
+        button {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        button:hover {
+            border-color: var(--accent);
+            color: var(--text-bright);
+        }
+
+        button.btn-primary {
+            background-color: #1f6feb;
+            border-color: #388bfd;
+            color: white;
+        }
+
+        button.btn-primary:hover {
+            background-color: #388bfd;
+        }
+
+        button.btn-panic {
+            background-color: var(--panic);
+            border-color: var(--panic);
+            color: white;
+        }
+
+        button.btn-panic:hover {
+            background-color: #da3633;
+        }
+
+        /* 2. Barra de Navegación por Pestañas */
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--muted);
+            padding: 6px 14px;
+            border-radius: 6px;
+        }
+
+        .tab-btn.active {
+            background-color: var(--card-bg);
+            border-color: var(--border);
+            color: var(--text-bright);
+        }
+
+        /* 3. Barra de Control de Shift Engine */
+        .shift-control-bar {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-label {
+            font-size: 0.8rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pill {
+            background-color: var(--card-header);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .pill-active {
+            border-color: var(--layer-shift);
+            color: var(--layer-shift);
+        }
+
+        .layer-badge {
+            display: flex;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .layer-option {
+            padding: 6px 14px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: var(--card-header);
+            color: var(--muted);
+            border: none;
+            border-radius: 0;
+            transition: all 0.2s;
+        }
+
+        .layer-option.selected-base {
+            background-color: #1f6feb;
+            color: white;
+        }
+
+        .layer-option.selected-shift {
+            background-color: var(--layer-shift);
+            color: #0d1117;
+        }
+
+        /* 4. Matriz 8x8 de Pads */
+        .matrix-container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .pad-grid {
+            display: grid;
+            grid-template-columns: repeat(8, minmax(64px, 80px));
+            gap: 8px;
+            width: fit-content;
+        }
+
+        .pad {
+            aspect-ratio: 1 / 1;
+            background-color: var(--card-header);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 8px;
+            font-size: 0.75rem;
+            color: var(--muted);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .pad:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .pad.is-shift-trigger {
+            border-color: var(--layer-shift);
+            box-shadow: 0 0 10px rgba(210, 153, 34, 0.35);
+            background: linear-gradient(135deg, #21262d 0%, #2f2513 100%);
+        }
+
+        .pad.is-shift-trigger .pad-role {
+            color: var(--layer-shift);
+            font-weight: bold;
+        }
+
+        .pad.active-on {
+            border-color: var(--note-on);
+            box-shadow: 0 0 8px rgba(63, 185, 80, 0.4);
+            background: #142a1b;
+        }
+
+        .pad-note {
+            font-family: monospace;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--text-bright);
+        }
+
+        .pad-chnl {
+            font-size: 0.7rem;
+            color: var(--muted);
+        }
+
+        .pad-role {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            align-self: flex-end;
+        }
+
+        /* 5. Footer con acciones de persistencia y Learn */
+        .matrix-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            padding-top: 15px;
+        }
+
+        .btn-learn {
+            background-color: #21262d;
+            border-color: var(--border);
+            color: var(--text-bright);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-learn.learning {
+            background-color: #388bfd;
+            color: white;
+            border-color: #58a6ff;
+            animation: pulse 1.2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.6); }
+            70% { box-shadow: 0 0 0 8px rgba(88, 166, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0); }
+        }
+
+        .footer-tools {
+            display: flex;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Header Global Integrado -->
+    <header>
+        <div>
+            <h1>MIDI & OSC Control Center</h1>
+            <span style="font-size: 0.85rem; color: var(--muted);">Matriz de Control, Conmutación de Capas y Monitor en Tiempo Real</span>
+        </div>
+        <div class="header-actions">
+            <select class="device-select" id="deviceSelect">
+                <option value="launchpad">Novation Launchpad S 2</option>
+                <option value="apc_mini">Akai APC Mini</option>
+                <option value="generic">Controlador MIDI Genérico</option>
+            </select>
+            <button class="btn-primary" id="btnToggleEnable">ENABLE</button>
+            <button class="btn-panic" onclick="alert('PANIC: Enviando All Notes Off a todos los canales.')">PANIC</button>
+        </div>
+    </header>
+
+    <!-- 2. Pestañas de Navegación del Sistema -->
+    <div class="nav-tabs">
+        <button class="tab-btn active">Matriz & Shift Engine</button>
+        <button class="tab-btn">Monitor de Tráfico (Log)</button>
+        <button class="tab-btn">Ruteo & OSC</button>
+    </div>
+
+    <!-- 3. Barra de Control Shift Engine -->
+    <div class="shift-control-bar">
+        <div class="control-group">
+            <span class="control-label">Shift Trigger</span>
+            <div class="status-pill pill-active" id="displayShiftTrigger">E7 (Ch 1)</div>
+        </div>
+
+        <div class="control-group">
+            <span class="control-label">Modo Gatillo</span>
+            <button id="btnToggleMode" onclick="toggleMode()">TOGGLE</button>
+        </div>
+
+        <div class="control-group">
+            <span class="control-label">Capa Activa</span>
+            <div class="layer-badge">
+                <button class="layer-option selected-base" id="layerBaseBtn" onclick="setLayer(0)">CAPA 0 (BASE)</button>
+                <button class="layer-option" id="layerShiftBtn" onclick="setLayer(1)">CAPA 1 (SHIFT)</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <span class="control-label">Vista</span>
+            <button id="btnViewMode">GRILLA 8x8</button>
+        </div>
+    </div>
+
+    <!-- 4. Contenedor de la Matriz de Pads (Espejo del Hardware) -->
+    <div class="matrix-container">
+        <div class="pad-grid" id="padGrid">
+            <!-- Pads inyectados dinámicamente con JavaScript -->
+        </div>
+    </div>
+
+    <!-- 5. Footer de Persistencia y Aprendizaje -->
+    <div class="matrix-footer">
+        <button class="btn-learn" id="btnLearn" onclick="toggleLearn()">
+            <span id="learnDot">●</span> MIDI LEARN
+        </button>
+
+        <div class="footer-tools">
+            <button onclick="clearState()">LIMPIAR</button>
+            <button onclick="importPreset()">IMPORTAR</button>
+            <button onclick="exportPreset()">EXPORTAR</button>
+        </div>
+    </div>
+
+    <script>
+        // Simulación de Estado
+        let currentMode = 'toggle';
+        let currentLayer = 0;
+        let isLearning = false;
+        let shiftNote = 100; // E7
+
+        // Nombres de notas para Launchpad
+        const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        function midiToNoteName(midiNumber) {
+            const note = NOTE_NAMES[midiNumber % 12];
+            const oct = Math.floor(midiNumber / 12) - 1;
+            return `${note}${oct}`;
+        }
+
+        // Generar Grilla 8x8 estilo Launchpad
+        const gridEl = document.getElementById('padGrid');
+        for (let row = 7; row >= 0; row--) {
+            for (let col = 0; col < 8; col++) {
+                const noteNum = (row + 1) * 16 + col; // Mapeo tradicional Launchpad (User 1)
+                const pad = document.createElement('div');
+                pad.className = 'pad';
+                pad.id = `pad-${noteNum}`;
+
+                if (noteNum === shiftNote) {
+                    pad.classList.add('is-shift-trigger');
+                }
+
+                pad.innerHTML = `
+                    <div class="pad-note">${midiToNoteName(noteNum)}</div>
+                    <div class="pad-chnl">Ch 1</div>
+                    <div class="pad-role">${noteNum === shiftNote ? 'SHIFT' : 'PAD'}</div>
+                `;
+
+                pad.addEventListener('click', () => {
+                    if (isLearning) {
+                        setShiftTrigger(noteNum);
+                        toggleLearn(false);
+                    } else {
+                        pad.classList.toggle('active-on');
+                    }
+                });
+
+                gridEl.appendChild(pad);
+            }
+        }
+
+        function toggleMode() {
+            currentMode = currentMode === 'toggle' ? 'flash' : 'toggle';
+            document.getElementById('btnToggleMode').textContent = currentMode.toUpperCase();
+        }
+
+        function setLayer(layer) {
+            currentLayer = layer;
+            const baseBtn = document.getElementById('layerBaseBtn');
+            const shiftBtn = document.getElementById('layerShiftBtn');
+
+            if (layer === 0) {
+                baseBtn.className = 'layer-option selected-base';
+                shiftBtn.className = 'layer-option';
+            } else {
+                baseBtn.className = 'layer-option';
+                shiftBtn.className = 'layer-option selected-shift';
+            }
+        }
+
+        function toggleLearn(forceState) {
+            isLearning = typeof forceState === 'boolean' ? forceState : !isLearning;
+            const btn = document.getElementById('btnLearn');
+            if (isLearning) {
+                btn.classList.add('learning');
+                btn.innerHTML = '● PRESIONA UN PAD...';
+            } else {
+                btn.classList.remove('learning');
+                btn.innerHTML = '● MIDI LEARN';
+            }
+        }
+
+        function setShiftTrigger(note) {
+            // Quitar clase anterior
+            const prevPad = document.getElementById(`pad-${shiftNote}`);
+            if (prevPad) {
+                prevPad.classList.remove('is-shift-trigger');
+                prevPad.querySelector('.pad-role').textContent = 'PAD';
+            }
+
+            // Asignar nueva
+            shiftNote = note;
+            const newPad = document.getElementById(`pad-${note}`);
+            if (newPad) {
+                newPad.classList.add('is-shift-trigger');
+                newPad.querySelector('.pad-role').textContent = 'SHIFT';
+            }
+
+            document.getElementById('displayShiftTrigger').textContent = `${midiToNoteName(note)} (Ch 1)`;
+        }
+
+        function clearState() {
+            document.querySelectorAll('.pad.active-on').forEach(p => p.classList.remove('active-on'));
+        }
+
+        function importPreset() {
+            alert('Función Importar: Carga configuración JSON de mapeo y StateCache.');
+        }
+
+        function exportPreset() {
+            alert('Función Exportar: Descarga JSON con el perfil actual de capas.');
+        }
+    </script>
+</body>
+</html>

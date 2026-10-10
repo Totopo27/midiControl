@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDI Control Center - Mapping & Monitor</title>
+    <style>
+        :root {
+            --bg-main: #121316;
+            --bg-panel: #1a1b1e;
+            --bg-card: #222328;
+            --bg-input: #101113;
+            --border-subtle: #2d3036;
+            --border-focus: #3b82f6;
+            
+            --text-main: #e2e8f0;
+            --text-muted: #848a96;
+            --text-heading: #f8fafc;
+
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            
+            --row-selected: #1e3a8a;
+            --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        header {
+            height: 52px;
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            gap: 16px;
+        }
+
+        .header-title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-badge {
+            font-weight: 800;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+            color: var(--text-heading);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background-color: var(--bg-main);
+            padding: 2px;
+            border-radius: 6px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .nav-tab {
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-muted);
+            border: none;
+            background: transparent;
+            transition: all 0.15s ease;
+        }
+
+        .nav-tab.active {
+            background-color: var(--bg-card);
+            color: var(--text-heading);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        /* Device Selector Pill (Estilo Akai verde central) */
+        .device-selector-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .device-pill {
+            background-color: #059669;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.82rem;
+            padding: 6px 14px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-panic {
+            background-color: #dc2626;
+            color: white;
+            font-weight: 700;
+            font-size: 0.75rem;
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .btn-panic:hover {
+            background-color: #b91c1c;
+        }
+
+        /* Main Workspace Container */
+        .main-workspace {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Left Master Panel: Mapping Matrix */
+        .master-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-subtle);
+            background-color: var(--bg-main);
+            overflow: hidden;
+        }
+
+        .table-viewport {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        table.matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.82rem;
+        }
+
+        table.matrix-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        table.matrix-table th {
+            padding: 8px 12px;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        table.matrix-table td {
+            padding: 7px 12px;
+            border-bottom: 1px solid #1c1e22;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        table.matrix-table tbody tr {
+            cursor: pointer;
+            transition: background 0.1s ease;
+        }
+
+        table.matrix-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+
+        table.matrix-table tbody tr.selected {
+            background-color: var(--row-selected) !important;
+            color: #ffffff;
+        }
+
+        /* Indicador de actividad en vivo (Led dot) */
+        .activity-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            display: inline-block;
+            background-color: #4b5563;
+            transition: background-color 0.15s, box-shadow 0.15s;
+        }
+
+        .activity-dot.active-cc {
+            background-color: var(--accent-cyan);
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        .activity-dot.active-note {
+            background-color: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        /* Matrix Bottom Controls (+ Add Rule) */
+        .master-toolbar {
+            height: 42px;
+            background-color: var(--bg-panel);
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            width: 28px;
+            height: 28px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-main);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-icon:hover {
+            border-color: var(--accent-blue);
+            color: #fff;
+        }
+
+        /* Right Detail Inspector */
+        .inspector-panel {
+            width: 340px;
+            background-color: var(--bg-panel);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 16px;
+            gap: 18px;
+        }
+
+        .inspector-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .inspector-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .inspector-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            min-width: 90px;
+        }
+
+        .inspector-input, select.inspector-select {
+            flex: 1;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 0.82rem;
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            outline: none;
+            text-align: right;
+        }
+
+        select.inspector-select {
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .inspector-input:focus, select.inspector-select:focus {
+            border-color: var(--accent-blue);
+        }
+
+        /* Toggle switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #374151;
+            transition: .2s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .2s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-blue);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+
+        /* Botón Learn */
+        .btn-learn {
+            width: 100%;
+            background-color: #374151;
+            color: #f3f4f6;
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-weight: 700;
+            font-size: 0.82rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.15s ease;
+        }
+
+        .btn-learn:hover {
+            background-color: #4b5563;
+        }
+
+        .btn-learn.listening {
+            background-color: #b45309;
+            color: #fff;
+            border-color: #f59e0b;
+            animation: pulse-learn 1.2s infinite;
+        }
+
+        @keyframes pulse-learn {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
+            70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        /* Curva Gráfica Interactiva */
+        .curve-preview-box {
+            background-color: #0b0c0e;
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            height: 100px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .curve-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Bottom Activity Bar (Slots / Bus visual) */
+        footer.bus-footer {
+            height: 38px;
+            background-color: var(--bg-panel);
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 12px;
+            font-size: 0.75rem;
+        }
+
+        .bus-label {
+            font-weight: 700;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .slots-strip {
+            display: flex;
+            gap: 3px;
+            overflow-x: auto;
+            flex: 1;
+            padding-bottom: 2px;
+        }
+
+        .slot-pill {
+            min-width: 22px;
+            height: 20px;
+            background-color: #1f2937;
+            color: #9ca3af;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.68rem;
+            font-family: var(--font-mono);
+            font-weight: 600;
+        }
+
+        .slot-pill.mapped {
+            background-color: var(--accent-cyan);
+            color: #0f172a;
+        }
+
+        .slot-pill.active {
+            background-color: #ffffff;
+            color: #000000;
+            box-shadow: 0 0 6px #fff;
+        }
+        /* Shift Engine & Pad Matrix Overlay View */
+        .view-content {
+            display: none;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .view-content.active {
+            display: flex;
+        }
+
+        .shift-engine-workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-main);
+            overflow-y: auto;
+            padding: 16px;
+            gap: 16px;
+        }
+
+        .shift-control-bar {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 10px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pill {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--accent-yellow);
+        }
+
+        .layer-badge {
+            display: flex;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .layer-option {
+            padding: 5px 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            background-color: var(--bg-card);
+            color: var(--text-muted);
+            border: none;
+            transition: all 0.15s;
+        }
+
+        .layer-option.selected-base {
+            background-color: var(--accent-blue);
+            color: #ffffff;
+        }
+
+        .layer-option.selected-shift {
+            background-color: var(--accent-yellow);
+            color: #121316;
+        }
+
+        .matrix-container {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .pad-grid {
+            display: grid;
+            grid-template-columns: repeat(8, minmax(58px, 72px));
+            gap: 8px;
+            width: fit-content;
+        }
+
+        .pad {
+            aspect-ratio: 1 / 1;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 6px;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.12s ease;
+            user-select: none;
+        }
+
+        .pad:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .pad.is-shift-trigger {
+            border-color: var(--accent-yellow);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+            background: linear-gradient(135deg, var(--bg-card) 0%, rgba(245, 158, 11, 0.15) 100%);
+        }
+
+        .pad.is-shift-trigger .pad-role {
+            color: var(--accent-yellow);
+            font-weight: bold;
+        }
+
+        .pad.active-on {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+            background: rgba(16, 185, 129, 0.18);
+        }
+
+        .pad-note {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-heading);
+        }
+
+        .pad-chnl {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+        }
+
+        .pad-role {
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            align-self: flex-end;
+        }
+
+        .matrix-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-subtle);
+            padding-top: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Superior -->
+    <header>
+        <div class="header-title-group">
+            <div class="brand-badge">
+                <span>🎛️</span>
+                <span>MIDICONTROL</span>
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchMainTab('mapping')">Mapping Matrix</button>
+                <button class="nav-tab" onclick="switchMainTab('shift-engine')">Shift Engine (Pads)</button>
+                <button class="nav-tab" onclick="switchMainTab('live-monitor')">Live Monitor</button>
+            </div>
+        </div>
+
+        <!-- Selector Central del Dispositivo Activo -->
+        <div class="device-selector-wrap">
+            <div class="device-pill" id="device-pill" title="Click para cambiar interfaz física">
+                <span id="active-device-name">AKAI APC-40 MK2</span>
+                <span style="font-size: 0.7rem;">▼</span>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <span style="font-size: 0.75rem; color: var(--accent-green);" id="connection-status">● ONLINE</span>
+            <button class="btn-panic" onclick="triggerPanic()">PANIC</button>
+        </div>
+    </header>
+
+    <!-- Workspace Master-Detail: Tab Mapping Matrix -->
+    <div class="main-workspace view-content active" id="view-mapping">
+        
+        <!-- Panel Izquierdo: Tabla Matriz de Mapeo -->
+        <div class="master-panel">
+            <div class="table-viewport">
+                <table class="matrix-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">Id</th>
+                            <th style="width: 40px; text-align: center;">Act</th>
+                            <th>Input Type</th>
+                            <th>Ch</th>
+                            <th>Note/CC</th>
+                            <th>Val In</th>
+                            <th>Destino</th>
+                            <th>Dirección/Path</th>
+                            <th>Modo</th>
+                            <th>Rango</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matrix-tbody">
+                        <!-- Filas de ejemplo que reflejan el diseño -->
+                        <tr class="selected" onclick="selectRow(1)">
+                            <td>1</td>
+                            <td style="text-align: center;"><span class="activity-dot active-cc"></span></td>
+                            <td>Midi CC</td>
+                            <td>1</td>
+                            <td>0</td>
+                            <td>38</td>
+                            <td>OSC Out</td>
+                            <td>/layer/1/opacity</td>
+                            <td>Linear</td>
+                            <td>0 - 255</td>
+                        </tr>
+                        <tr onclick="selectRow(2)">
+                            <td>2</td>
+                            <td style="text-align: center;"><span class="activity-dot active-cc"></span></td>
+                            <td>Midi CC</td>
+                            <td>1</td>
+                            <td>1</td>
+                            <td>76</td>
+                            <td>OSC Out</td>
+                            <td>/layer/2/opacity</td>
+                            <td>Linear</td>
+                            <td>0 - 255</td>
+                        </tr>
+                        <tr onclick="selectRow(3)">
+                            <td>3</td>
+                            <td style="text-align: center;"><span class="activity-dot active-note"></span></td>
+                            <td>Note On</td>
+                            <td>1</td>
+                            <td>2</td>
+                            <td>121</td>
+                            <td>Midi Virt</td>
+                            <td>Ch 2 / Note 60</td>
+                            <td>Toggle</td>
+                            <td>0 - 127</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Toolbar inferior para agregar reglas -->
+            <div class="master-toolbar">
+                <button class="btn-icon" title="Agregar nueva regla" onclick="addNewRule()">+</button>
+                <button class="btn-icon" title="Eliminar regla seleccionada" onclick="deleteSelectedRule()">−</button>
+                <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 8px;">3 reglas configuradas</span>
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Inspector de Parámetros & MIDI LEARN -->
+        <div class="inspector-panel">
+            
+            <!-- Habilitar Regla -->
+            <div class="inspector-row">
+                <span class="inspector-label" style="font-weight: 600; color: var(--text-heading);">Habilitado</span>
+                <label class="switch">
+                    <input type="checkbox" id="field-enabled" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <!-- Sección Entrada MIDI & Learn -->
+            <div class="inspector-section">
+                <div class="inspector-row">
+                    <span class="inspector-label">Input Type</span>
+                    <select class="inspector-select" id="field-input-type">
+                        <option value="cc">Midi Control Value (CC)</option>
+                        <option value="note">Midi Note (On/Off)</option>
+                        <option value="pitchbend">Pitch Bend</option>
+                    </select>
+                </div>
+
+                <div style="margin-top: 4px;">
+                    <button class="btn-learn" id="btn-learn" onclick="toggleLearnMode()">
+                        <span>🔍</span>
+                        <span id="learn-text">MIDI LEARN</span>
+                    </button>
+                </div>
+
+                <div class="inspector-row">
+                    <span class="inspector-label">Channel</span>
+                    <input type="number" class="inspector-input" id="field-channel" value="1" min="1" max="16">
+                </div>
+
+                <div class="inspector-row">
+                    <span class="inspector-label">Note / CC</span>
+                    <input type="number" class="inspector-input" id="field-note-cc" value="2" min="0" max="127">
+                </div>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border-subtle);">
+
+            <!-- Sección Destino y Ruteo -->
+            <div class="inspector-section">
+                <div class="inspector-row">
+                    <span class="inspector-label">Target Protocol</span>
+                    <select class="inspector-select" id="field-target-protocol">
+                        <option value="osc">OSC (UDP)</option>
+                        <option value="midi-virtual">MIDI Virtual Loop</option>
+                        <option value="artnet">Art-Net (DMX)</option>
+                    </select>
+                </div>
+
+                <div class="inspector-row">
+                    <span class="inspector-label">Address / Path</span>
+                    <input type="text" class="inspector-input" id="field-target-address" value="/layer/1/opacity" style="text-align: left;">
+                </div>
+
+                <div class="inspector-row">
+                    <span class="inspector-label">Behavior</span>
+                    <select class="inspector-select" id="field-behavior">
+                        <option value="continuous">Continuous / Flash</option>
+                        <option value="toggle">Toggle On/Off</option>
+                        <option value="trigger">Trigger Pulse</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border-subtle);">
+
+            <!-- Sección Curva y Rangos -->
+            <div class="inspector-section">
+                <div class="inspector-row">
+                    <span class="inspector-label">Value Low</span>
+                    <input type="number" class="inspector-input" id="field-val-low" value="0">
+                </div>
+
+                <div class="inspector-row">
+                    <span class="inspector-label">Value High</span>
+                    <input type="number" class="inspector-input" id="field-val-high" value="255">
+                </div>
+
+                <div class="inspector-row">
+                    <span class="inspector-label">Fader Curve</span>
+                    <select class="inspector-select" id="field-curve" onchange="updateCurvePreview()">
+                        <option value="linear">Linear</option>
+                        <option value="exp">Exponential</option>
+                        <option value="log">Logarithmic</option>
+                        <option value="scurve">S-Curve</option>
+                    </select>
+                </div>
+
+                <!-- Preview de la curva gráfica -->
+                <div class="curve-preview-box">
+                    <svg class="curve-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <line x1="0" y1="100" x2="100" y2="100" stroke="#2d3036" stroke-width="1"/>
+                        <line x1="0" y1="0" x2="0" y2="100" stroke="#2d3036" stroke-width="1"/>
+                        <path id="curve-path" d="M 0 100 L 100 0" fill="none" stroke="#e2e8f0" stroke-width="2"/>
+                    </svg>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Workspace View: Tab Shift Engine & Pads Matrix -->
+    <div class="view-content" id="view-shift-engine">
+        <div class="shift-engine-workspace">
+            <!-- Barra de Control Shift Engine -->
+            <div class="shift-control-bar">
+                <div class="control-group">
+                    <span class="control-label">Shift Trigger</span>
+                    <div class="status-pill" id="displayShiftTrigger">E7 (Ch 1)</div>
+                </div>
+
+                <div class="control-group">
+                    <span class="control-label">Modo Gatillo</span>
+                    <button class="nav-tab" style="background: var(--bg-card); border: 1px solid var(--border-subtle);" id="btnToggleMode" onclick="toggleShiftMode()">TOGGLE</button>
+                </div>
+
+                <div class="control-group">
+                    <span class="control-label">Capa Activa</span>
+                    <div class="layer-badge">
+                        <button class="layer-option selected-base" id="layerBaseBtn" onclick="setShiftLayer(0)">CAPA 0 (BASE)</button>
+                        <button class="layer-option" id="layerShiftBtn" onclick="setShiftLayer(1)">CAPA 1 (SHIFT)</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <span class="control-label">Dispositivo</span>
+                    <span style="font-size: 0.8rem; font-weight: 600; color: var(--accent-green);">LAUNCHPAD S / GRID 8x8</span>
+                </div>
+            </div>
+
+            <!-- Matriz 8x8 de Pads -->
+            <div class="matrix-container">
+                <div class="pad-grid" id="padGrid"></div>
+            </div>
+
+            <!-- Footer con MIDI Learn y Presets -->
+            <div class="matrix-footer">
+                <button class="btn-learn" id="btnLearnShift" style="width: auto; padding: 6px 16px;" onclick="toggleShiftLearn()">
+                    <span id="learnDot">●</span> <span id="learnShiftText">MIDI LEARN</span>
+                </button>
+
+                <div style="display: flex; gap: 8px;">
+                    <button class="nav-tab" style="background: var(--bg-card); border: 1px solid var(--border-subtle);" onclick="clearPadStates()">LIMPIAR</button>
+                    <button class="nav-tab" style="background: var(--bg-card); border: 1px solid var(--border-subtle);" onclick="alert('Importar perfil JSON de mapeo')">IMPORTAR</button>
+                    <button class="nav-tab" style="background: var(--bg-card); border: 1px solid var(--border-subtle);" onclick="alert('Exportar perfil JSON de mapeo')">EXPORTAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workspace View: Live Monitor (Telemetría Conectada en Vivo) -->
+    <div class="view-content" id="view-live-monitor" style="flex: 1; display: none; flex-direction: column; padding: 16px; gap: 12px; overflow: hidden;">
+        <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 10px 16px;">
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <div>
+                    <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Total Eventos:</span>
+                    <span style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan); margin-left: 6px;" id="live-total-count">0</span>
+                </div>
+                <div>
+                    <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Notas Activas:</span>
+                    <span style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-green); margin-left: 6px;" id="live-active-notes">0</span>
+                </div>
+                <div>
+                    <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Latencia Media:</span>
+                    <span style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-yellow); margin-left: 6px;" id="live-latency">0.0 µs</span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="nav-tab" style="background: var(--bg-card); border: 1px solid var(--border-subtle);" id="btn-clear-telemetry" onclick="clearLiveTelemetry()">LIMPIAR LOG</button>
+            </div>
+        </div>
+
+        <div style="flex: 1; background: var(--bg-panel); border: 1px solid var(--border-subtle); border-radius: 6px; overflow-y: auto;">
+            <table class="matrix-table" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th style="width: 90px;">Hora</th>
+                        <th style="width: 50px;">Dir</th>
+                        <th style="width: 130px;">Evento</th>
+                        <th style="width: 50px;">Ch</th>
+                        <th style="width: 70px;">Nota/CC</th>
+                        <th style="width: 60px;">Val</th>
+                        <th style="width: 110px;">Hex</th>
+                        <th>Destino / Origen</th>
+                    </tr>
+                </thead>
+                <tbody id="live-telemetry-tbody">
+                    <!-- Filas inyectadas vía WebSocket -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Bus Visual Inferior (Slots de canales activos) -->
+    <footer class="bus-footer">
+        <span class="bus-label">Virtual Output Bus:</span>
+        <div class="slots-strip" id="slots-strip">
+            <!-- 34 slots generados dinámicamente -->
+        </div>
+    </footer>
+
+    <script>
+        let isLearning = false;
+        let selectedRowId = 1;
+
+        // Render slots de la barra inferior
+        const slotsStrip = document.getElementById('slots-strip');
+        for (let i = 1; i <= 34; i++) {
+            const pill = document.createElement('div');
+            pill.className = `slot-pill ${i <= 3 ? 'mapped' : ''}`;
+            pill.textContent = i;
+            slotsStrip.appendChild(pill);
+        }
+
+        // Selección de fila (Master -> Detail)
+        function selectRow(id) {
+            selectedRowId = id;
+            const rows = document.querySelectorAll('#matrix-tbody tr');
+            rows.forEach((r, idx) => {
+                if (idx + 1 === id) {
+                    r.classList.add('selected');
+                } else {
+                    r.classList.remove('selected');
+                }
+            });
+        }
+
+        // Toggle del modo MIDI Learn
+        function toggleLearnMode() {
+            isLearning = !isLearning;
+            const btn = document.getElementById('btn-learn');
+            const txt = document.getElementById('learn-text');
+
+            if (isLearning) {
+                btn.classList.add('listening');
+                txt.textContent = 'ESCUCHANDO DISPOSITIVO...';
+            } else {
+                btn.classList.remove('listening');
+                txt.textContent = 'MIDI LEARN';
+            }
+        }
+
+        // Actualizar preview SVG de la curva
+        function updateCurvePreview() {
+            const curveType = document.getElementById('field-curve').value;
+            const path = document.getElementById('curve-path');
+            
+            if (curveType === 'linear') {
+                path.setAttribute('d', 'M 0 100 L 100 0');
+            } else if (curveType === 'exp') {
+                path.setAttribute('d', 'M 0 100 Q 75 90 100 0');
+            } else if (curveType === 'log') {
+                path.setAttribute('d', 'M 0 100 Q 25 10 100 0');
+            } else if (curveType === 'scurve') {
+                path.setAttribute('d', 'M 0 100 C 40 100 60 0 100 0');
+            }
+        }
+
+        // --- ENLACE WEBSOCKET Y TELEMETRÍA EN VIVO ---
+        let ws = null;
+        let wsConnected = false;
+        let totalEventsCount = 0;
+        let activeNotesCount = 0;
+        let latencyAcc = 0;
+
+        const liveTotalCount = document.getElementById('live-total-count');
+        const liveActiveNotes = document.getElementById('live-active-notes');
+        const liveLatency = document.getElementById('live-latency');
+        const liveTelemetryTbody = document.getElementById('live-telemetry-tbody');
+        const activeDeviceName = document.getElementById('active-device-name');
+        const connectionStatus = document.getElementById('connection-status');
+
+        function connectWebSocket() {
+            const host = window.location.hostname || '127.0.0.1';
+            const wsUrl = `ws://${host}:8081`;
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                wsConnected = true;
+                if (connectionStatus) {
+                    connectionStatus.textContent = '● ENLAZADO WS 8081';
+                    connectionStatus.style.color = 'var(--accent-green)';
+                }
+                ws.send(JSON.stringify({ type: 'get_devices' }));
+            };
+
+            ws.onclose = () => {
+                wsConnected = false;
+                if (connectionStatus) {
+                    connectionStatus.textContent = '○ RECONECTANDO...';
+                    connectionStatus.style.color = 'var(--accent-yellow)';
+                }
+                setTimeout(connectWebSocket, 2000);
+            };
+
+            ws.onerror = () => {
+                try { ws.close(); } catch(_) {}
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'device_inventory') {
+                        if (msg.activeOutput && activeDeviceName) {
+                            activeDeviceName.textContent = msg.activeOutput;
+                        }
+                    } else if (msg.type === 'telemetry' && msg.data) {
+                        handleTelemetryEvent(msg.data);
+                    }
+                } catch (e) {
+                    console.error('Error parseando mensaje:', e);
+                }
+            };
+        }
+
+        function handleTelemetryEvent(data) {
+            totalEventsCount++;
+            if (liveTotalCount) liveTotalCount.textContent = totalEventsCount.toLocaleString();
+
+            if (data.event === 'noteon') {
+                activeNotesCount++;
+            } else if (data.event === 'noteoff' && activeNotesCount > 0) {
+                activeNotesCount--;
+            }
+            if (liveActiveNotes) liveActiveNotes.textContent = activeNotesCount;
+
+            if (data.durationUs) {
+                latencyAcc = (latencyAcc * 0.9) + (data.durationUs * 0.1);
+                if (liveLatency) liveLatency.textContent = `${latencyAcc.toFixed(1)} µs`;
+            }
+
+            if (!liveTelemetryTbody) return;
+
+            const tr = document.createElement('tr');
+            const timeStr = new Date(data.timestamp || Date.now()).toISOString().split('T')[1].replace('Z', '');
+            const direction = data.dir || 'out';
+            const evtName = (data.event || data.type || 'msg').toUpperCase();
+            const ch = data.channel || (data.protocol === 'osc' ? 'OSC' : 1);
+            const noteOrCc = data.note !== undefined ? data.note : (data.path || '-');
+            const val = data.velocity !== undefined ? data.velocity : (data.args || '-');
+            const hex = data.hex || '-';
+            const target = data.midiStatus?.name || data.target || (data.clientId ? data.clientId : 'Sistema');
+
+            const tdTime = document.createElement('td');
+            tdTime.style.color = 'var(--text-muted)';
+            tdTime.textContent = timeStr;
+
+            const tdDir = document.createElement('td');
+            tdDir.style.fontWeight = '700';
+            tdDir.style.color = direction === 'in' ? 'var(--accent-cyan)' : 'var(--accent-green)';
+            tdDir.textContent = direction;
+
+            const tdEvt = document.createElement('td');
+            tdEvt.style.fontWeight = '600';
+            tdEvt.textContent = evtName;
+
+            const tdCh = document.createElement('td');
+            tdCh.textContent = String(ch);
+
+            const tdNote = document.createElement('td');
+            tdNote.textContent = String(noteOrCc);
+
+            const tdVal = document.createElement('td');
+            tdVal.style.fontWeight = '700';
+            tdVal.textContent = String(val);
+
+            const tdHex = document.createElement('td');
+            tdHex.style.fontFamily = 'var(--font-mono)';
+            tdHex.style.color = 'var(--text-muted)';
+            tdHex.textContent = hex;
+
+            const tdTarget = document.createElement('td');
+            tdTarget.style.color = 'var(--text-muted)';
+            tdTarget.textContent = target;
+
+            tr.appendChild(tdTime);
+            tr.appendChild(tdDir);
+            tr.appendChild(tdEvt);
+            tr.appendChild(tdCh);
+            tr.appendChild(tdNote);
+            tr.appendChild(tdVal);
+            tr.appendChild(tdHex);
+            tr.appendChild(tdTarget);
+
+            liveTelemetryTbody.insertBefore(tr, liveTelemetryTbody.firstChild);
+            if (liveTelemetryTbody.children.length > 100) {
+                liveTelemetryTbody.removeChild(liveTelemetryTbody.lastChild);
+            }
+        }
+
+        function clearLiveTelemetry() {
+            if (liveTelemetryTbody) {
+                while (liveTelemetryTbody.firstChild) {
+                    liveTelemetryTbody.removeChild(liveTelemetryTbody.firstChild);
+                }
+            }
+        }
+
+        function triggerPanic() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'panic' }));
+            }
+            activeNotesCount = 0;
+            if (liveActiveNotes) liveActiveNotes.textContent = '0';
+        }
+
+        // Iniciar conexión al cargar
+        connectWebSocket();
+
+        function addNewRule() {
+            console.log('Nueva regla agregada');
+        }
+
+        function deleteSelectedRule() {
+            console.log('Regla eliminada:', selectedRowId);
+        }
+
+        // Navegación por Pestañas Principales
+        function switchMainTab(tabName) {
+            const tabs = document.querySelectorAll('.nav-tabs .nav-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+
+            document.querySelectorAll('.view-content').forEach(v => {
+                v.classList.remove('active');
+                v.style.display = 'none';
+            });
+
+            if (tabName === 'mapping') {
+                tabs[0].classList.add('active');
+                const v = document.getElementById('view-mapping');
+                v.classList.add('active');
+                v.style.display = 'flex';
+            } else if (tabName === 'shift-engine') {
+                tabs[1].classList.add('active');
+                const v = document.getElementById('view-shift-engine');
+                v.classList.add('active');
+                v.style.display = 'block';
+            } else if (tabName === 'live-monitor') {
+                tabs[2].classList.add('active');
+                const v = document.getElementById('view-live-monitor');
+                v.classList.add('active');
+                v.style.display = 'flex';
+            }
+        }
+
+        // Lógica de Matriz & Shift Engine
+        let shiftMode = 'toggle';
+        let currentShiftLayer = 0;
+        let isLearningShift = false;
+        let shiftTriggerNote = 100; // E7
+
+        const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        function midiNumToNote(num) {
+            const n = NOTE_NAMES[num % 12];
+            const oct = Math.floor(num / 12) - 1;
+            return `${n}${oct}`;
+        }
+
+        const padGridEl = document.getElementById('padGrid');
+        if (padGridEl) {
+            for (let r = 7; r >= 0; r--) {
+                for (let c = 0; c < 8; c++) {
+                    const noteNum = (r + 1) * 16 + c;
+                    const pad = document.createElement('div');
+                    pad.className = 'pad';
+                    pad.id = `pad-matrix-${noteNum}`;
+
+                    if (noteNum === shiftTriggerNote) {
+                        pad.classList.add('is-shift-trigger');
+                    }
+
+                    pad.innerHTML = `
+                        <div class="pad-note">${midiNumToNote(noteNum)}</div>
+                        <div class="pad-chnl">Ch 1</div>
+                        <div class="pad-role">${noteNum === shiftTriggerNote ? 'SHIFT' : 'PAD'}</div>
+                    `;
+
+                    pad.addEventListener('click', () => {
+                        if (isLearningShift) {
+                            assignShiftTrigger(noteNum);
+                            toggleShiftLearn(false);
+                        } else {
+                            pad.classList.toggle('active-on');
+                        }
+                    });
+
+                    padGridEl.appendChild(pad);
+                }
+            }
+        }
+
+        function toggleShiftMode() {
+            shiftMode = shiftMode === 'toggle' ? 'flash' : 'toggle';
+            document.getElementById('btnToggleMode').textContent = shiftMode.toUpperCase();
+        }
+
+        function setShiftLayer(layer) {
+            currentShiftLayer = layer;
+            const baseBtn = document.getElementById('layerBaseBtn');
+            const shiftBtn = document.getElementById('layerShiftBtn');
+
+            if (layer === 0) {
+                baseBtn.className = 'layer-option selected-base';
+                shiftBtn.className = 'layer-option';
+            } else {
+                baseBtn.className = 'layer-option';
+                shiftBtn.className = 'layer-option selected-shift';
+            }
+        }
+
+        function toggleShiftLearn(forceState) {
+            isLearningShift = typeof forceState === 'boolean' ? forceState : !isLearningShift;
+            const btn = document.getElementById('btnLearnShift');
+            const txt = document.getElementById('learnShiftText');
+
+            if (isLearningShift) {
+                btn.classList.add('listening');
+                txt.textContent = 'PULSA UN PAD...';
+            } else {
+                btn.classList.remove('listening');
+                txt.textContent = 'MIDI LEARN';
+            }
+        }
+
+        function assignShiftTrigger(note) {
+            const oldPad = document.getElementById(`pad-matrix-${shiftTriggerNote}`);
+            if (oldPad) {
+                oldPad.classList.remove('is-shift-trigger');
+                oldPad.querySelector('.pad-role').textContent = 'PAD';
+            }
+
+            shiftTriggerNote = note;
+            const newPad = document.getElementById(`pad-matrix-${note}`);
+            if (newPad) {
+                newPad.classList.add('is-shift-trigger');
+                newPad.querySelector('.pad-role').textContent = 'SHIFT';
+            }
+
+            document.getElementById('displayShiftTrigger').textContent = `${midiNumToNote(note)} (Ch 1)`;
+        }
+
+        function clearPadStates() {
+            document.querySelectorAll('#padGrid .pad.active-on').forEach(p => p.classList.remove('active-on'));
+        }
+    </script>
+</body>
+</html>
