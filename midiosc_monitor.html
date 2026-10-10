@@ -322,6 +322,152 @@
             font-family: 'JetBrains Mono', monospace;
         }
 
+        /* --- MULTI-PROJECT ACTIVE SESSIONS CARDS --- */
+        .sessions-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-hairline);
+            border-radius: 8px;
+            padding: 14px 18px;
+            box-shadow: var(--shadow-panel);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .sessions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sessions-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sessions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        .session-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-hairline);
+            border-radius: 6px;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: border-color 0.15s ease;
+        }
+
+        .session-card:hover {
+            border-color: var(--border-hover);
+        }
+
+        .session-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .session-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
+        }
+
+        .session-panic-btn {
+            background: rgba(220, 38, 38, 0.12);
+            border: 1px solid rgba(220, 38, 38, 0.4);
+            color: var(--led-red);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .session-panic-btn:hover {
+            background: var(--led-red);
+            color: #fff;
+        }
+
+        .session-details {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .session-badge {
+            display: inline-block;
+            background: rgba(6, 182, 212, 0.12);
+            color: var(--accent-cyan);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.68rem;
+            font-weight: 600;
+        }
+
+        /* --- DEVICE / SCOPE FILTER SWITCHES --- */
+        .scope-filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-hairline);
+            overflow-x: auto;
+        }
+
+        .scope-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .scope-pill {
+            background: transparent;
+            border: 1px solid var(--border-hairline);
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s ease;
+        }
+
+        .scope-pill:hover {
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+
+        .scope-pill.active {
+            background: rgba(6, 182, 212, 0.15);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            box-shadow: 0 0 8px var(--accent-cyan-glow);
+        }
+
         /* --- 16-CHANNEL MIDI LED BUS --- */
         .channel-bus-panel {
             background: var(--bg-surface);
@@ -756,7 +902,7 @@
             </button>
             <div class="pilot-lamp" id="socket-lamp">
                 <span class="led-dot" id="socket-led"></span>
-                <span id="socket-status">[ ENLAZADO ]</span>
+                <span id="socket-status">[ CONECTANDO... ]</span>
             </div>
         </div>
     </header>
@@ -833,6 +979,74 @@
         </div>
     </div>
 
+    <!-- MULTI-PROJECT CONCURRENT SESSIONS -->
+    <section class="sessions-panel" id="panel-sessions">
+        <div class="sessions-header">
+            <span class="sessions-title">
+                <span class="led-indicator" style="background: var(--accent-cyan); width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
+                PROYECTOS Y APLICACIONES CONECTADAS SIMULTÁNEAMENTE
+            </span>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-dim);" id="sessions-counter">0 PROYECTOS REGISTRADOS</span>
+                <button class="btn btn-mini" id="btn-toggle-new-session" style="font-size: 0.7rem; padding: 4px 10px; background: rgba(6, 182, 212, 0.15); border: 1px solid var(--accent-cyan); color: var(--accent-cyan);">+ CONFIGURAR PROYECTO</button>
+            </div>
+        </div>
+
+        <!-- FORMULARIO DESPLEGABLE PARA AÑADIR / CONFIGURAR PROYECTO -->
+        <div id="new-session-form" style="display: none; background: var(--bg-canvas); border: 1px dashed var(--accent-cyan); border-radius: 6px; padding: 12px; gap: 12px; flex-direction: column;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 700; color: var(--accent-cyan);">VINCULAR NUEVO PROYECTO O CLIENTE</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">
+                <div class="select-group">
+                    <label class="select-label" for="input-session-label">NOMBRE DEL PROYECTO:</label>
+                    <input type="text" id="input-session-label" class="select-custom" placeholder="Ej: Teclados Wilson" value="Teclados Wilson" style="width: 100%;">
+                </div>
+                <div class="select-group">
+                    <label class="select-label" for="input-session-id">ID CLIENTE (UNÍVOCO):</label>
+                    <input type="text" id="input-session-id" class="select-custom" placeholder="wilson-keyboards" value="wilson-keyboards" style="width: 100%;">
+                </div>
+                <div class="select-group">
+                    <label class="select-label" for="select-session-channel">CANAL MIDI (1-16):</label>
+                    <select id="select-session-channel" class="select-custom" style="width: 100%;">
+                        <option value="1" selected>Canal 1</option>
+                        <option value="2">Canal 2</option>
+                        <option value="3">Canal 3</option>
+                        <option value="4">Canal 4</option>
+                        <option value="5">Canal 5</option>
+                        <option value="6">Canal 6</option>
+                        <option value="7">Canal 7</option>
+                        <option value="8">Canal 8</option>
+                        <option value="9">Canal 9</option>
+                        <option value="10">Canal 10</option>
+                        <option value="11">Canal 11</option>
+                        <option value="12">Canal 12</option>
+                        <option value="13">Canal 13</option>
+                        <option value="14">Canal 14</option>
+                        <option value="15">Canal 15</option>
+                        <option value="16">Canal 16</option>
+                    </select>
+                </div>
+                <div class="select-group">
+                    <label class="select-label" for="input-session-port">PUERTO OSC (UDP):</label>
+                    <input type="number" id="input-session-port" class="select-custom" placeholder="57120" value="57120" style="width: 100%;">
+                </div>
+                <div class="select-group">
+                    <label class="select-label" for="input-session-prefix">PREFIJO OSC:</label>
+                    <input type="text" id="input-session-prefix" class="select-custom" placeholder="/wilson" value="/wilson" style="width: 100%;">
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
+                <button class="btn btn-mini" id="btn-cancel-session" style="padding: 4px 12px;">CANCELAR</button>
+                <button class="btn btn-mini" id="btn-save-session" style="padding: 4px 14px; background: var(--accent-cyan); color: #000; font-weight: 700;">GUARDAR Y ACTIVAR</button>
+            </div>
+        </div>
+
+        <div class="sessions-grid" id="sessions-cards-container">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-dim); padding: 8px 0;">
+                Esperando conexión o registro de proyectos (ej. Teclados-Wilson, Diapasón-microtonal)...
+            </div>
+        </div>
+    </section>
+
     <!-- ACTIONS & STREAM CONTROLS -->
     <section class="controls-toolbar">
         <div class="action-group">
@@ -870,6 +1084,15 @@
                 <span class="stream-header-title">MIDI EVENT STREAM (HARDWARE / PROTOCOLO)</span>
                 <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-dim);" id="feed-counter">0 ENTRADAS</span>
             </div>
+
+            <!-- SWITCHES / FILTROS DE DISPOSITIVOS Y PROYECTOS -->
+            <div class="scope-filter-bar" id="midi-scope-bar">
+                <span class="scope-label">FILTRAR DISPOSITIVO:</span>
+                <div id="pills-container" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="scope-pill active" data-scope="all" id="btn-scope-all">● TODOS LOS DISPOSITIVOS</button>
+                </div>
+            </div>
+
             <div class="table-viewport">
                 <table>
                     <thead>
@@ -1101,6 +1324,49 @@
         const bypassText = document.getElementById('bypass-text');
         let isBypass = false;
 
+        const midiScopeBar = document.getElementById('midi-scope-bar');
+        const pillsContainer = document.getElementById('pills-container');
+        let activeMidiScope = 'all'; // 'all' o nombre del dispositivo/proyecto
+        let knownDevicesSet = new Set();
+
+        function renderScopePills() {
+            if (!pillsContainer) return;
+            pillsContainer.innerHTML = '';
+
+            // 1. Botón "Todos"
+            const allBtn = document.createElement('button');
+            allBtn.className = `scope-pill ${activeMidiScope === 'all' ? 'active' : ''}`;
+            allBtn.textContent = '● TODOS LOS DISPOSITIVOS';
+            allBtn.onclick = () => setMidiScope('all');
+            pillsContainer.appendChild(allBtn);
+
+            // 2. Botón por cada dispositivo físico o proyecto conocido
+            knownDevicesSet.forEach(devName => {
+                if (!devName || devName === 'none') return;
+                const pill = document.createElement('button');
+                pill.className = `scope-pill ${activeMidiScope === devName ? 'active' : ''}`;
+                pill.textContent = devName;
+                pill.onclick = () => setMidiScope(devName);
+                pillsContainer.appendChild(pill);
+            });
+        }
+
+        function setMidiScope(scopeName) {
+            activeMidiScope = scopeName;
+            renderScopePills();
+
+            // Filtrar visualmente filas ya presentes en la tabla
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(tr => {
+                const target = tr.getAttribute('data-device') || '';
+                if (activeMidiScope === 'all' || target.includes(activeMidiScope)) {
+                    tr.style.display = '';
+                } else {
+                    tr.style.display = 'none';
+                }
+            });
+        }
+
         // Pestañas
         const tabMidi = document.getElementById('tab-midi');
         const tabOsc = document.getElementById('tab-osc');
@@ -1224,25 +1490,34 @@
         });
 
         function updateDeviceDropdowns(inventory) {
+            if (!inventory) return;
             const currentIn = inventory.activeInput || 'none';
             selectMidiIn.innerHTML = '<option value="none">-- Sin entrada (Desconectado) --</option>';
-            (inventory.inputs || []).forEach(inp => {
-                const opt = document.createElement('option');
-                opt.value = inp.name;
-                opt.textContent = `${inp.name} (${inp.manufacturer || 'General'})`;
-                if (inp.name === currentIn) opt.selected = true;
-                selectMidiIn.appendChild(opt);
-            });
+            if (Array.isArray(inventory.inputs)) {
+                inventory.inputs.forEach(inp => {
+                    const opt = document.createElement('option');
+                    opt.value = inp.name;
+                    opt.textContent = `${inp.name} (${inp.manufacturer || 'General'})`;
+                    if (inp.name === currentIn) opt.selected = true;
+                    selectMidiIn.appendChild(opt);
+                    knownDevicesSet.add(inp.name);
+                });
+            }
 
             const currentOut = inventory.activeOutput || 'none';
             selectMidiOut.innerHTML = '<option value="none">-- Sin salida (Desconectado) --</option>';
-            (inventory.outputs || []).forEach(out => {
-                const opt = document.createElement('option');
-                opt.value = out.name;
-                opt.textContent = `${out.name} (${out.manufacturer || 'General'})`;
-                if (out.name === currentOut) opt.selected = true;
-                selectMidiOut.appendChild(opt);
-            });
+            if (Array.isArray(inventory.outputs)) {
+                inventory.outputs.forEach(out => {
+                    const opt = document.createElement('option');
+                    opt.value = out.name;
+                    opt.textContent = `${out.name} (${out.manufacturer || 'General'})`;
+                    if (out.name === currentOut) opt.selected = true;
+                    selectMidiOut.appendChild(opt);
+                    knownDevicesSet.add(out.name);
+                });
+            }
+
+            renderScopePills();
 
             if (inventory.activeOutput) {
                 valTarget.textContent = inventory.activeOutput;
@@ -1266,6 +1541,90 @@
         let wsReconnectTimer = null;
         const wsHost = window.location.hostname || '127.0.0.1';
 
+        function updateSessionsUI(sessions) {
+            const container = document.getElementById('sessions-cards-container');
+            const counter = document.getElementById('sessions-counter');
+            if (!container || !counter) return;
+
+            const list = Array.isArray(sessions) ? sessions : [];
+            counter.textContent = `${list.length} PROYECTO${list.length === 1 ? '' : 'S'} REGISTRADO${list.length === 1 ? '' : 'S'}`;
+
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+
+            if (list.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.style.fontFamily = "'JetBrains Mono', monospace";
+                emptyMsg.style.fontSize = '0.75rem';
+                emptyMsg.style.color = 'var(--text-dim)';
+                emptyMsg.style.padding = '8px 0';
+                emptyMsg.textContent = 'Esperando conexión o registro de proyectos (ej. Teclados-Wilson, Diapasón-microtonal)...';
+                container.appendChild(emptyMsg);
+                return;
+            }
+
+            list.forEach(sess => {
+                const sessionLabel = sess.label || sess.clientId;
+                knownDevicesSet.add(sessionLabel);
+
+                const card = document.createElement('div');
+                card.className = 'session-card';
+
+                const cardHeader = document.createElement('div');
+                cardHeader.className = 'session-card-header';
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'session-name';
+                nameSpan.textContent = sess.label || sess.clientId;
+
+                const panicBtn = document.createElement('button');
+                panicBtn.className = 'session-panic-btn';
+                panicBtn.textContent = 'PANIC';
+                panicBtn.title = `Silenciar únicamente ${sess.label || sess.clientId}`;
+                panicBtn.onclick = () => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'panic', clientId: sess.clientId }));
+                    }
+                };
+
+                cardHeader.appendChild(nameSpan);
+                cardHeader.appendChild(panicBtn);
+
+                const details = document.createElement('div');
+                details.className = 'session-details';
+
+                const chDiv = document.createElement('div');
+                chDiv.textContent = `MIDI CANAL: `;
+                const chBadge = document.createElement('span');
+                chBadge.className = 'session-badge';
+                chBadge.textContent = `CH ${sess.midiChannel}`;
+                chDiv.appendChild(chBadge);
+
+                const oscDiv = document.createElement('div');
+                oscDiv.textContent = `OSC TARGET: `;
+                const oscBadge = document.createElement('span');
+                oscBadge.className = 'session-badge';
+                oscBadge.style.color = 'var(--accent-violet)';
+                oscBadge.style.background = 'rgba(124, 58, 237, 0.12)';
+                oscBadge.textContent = `${sess.oscHost}:${sess.oscPort}${sess.oscPrefix || ''}`;
+                oscDiv.appendChild(oscBadge);
+
+                const notesDiv = document.createElement('div');
+                notesDiv.textContent = `NOTAS ACTIVAS: ${sess.activeNotesCount || 0}`;
+
+                details.appendChild(chDiv);
+                details.appendChild(oscDiv);
+                details.appendChild(notesDiv);
+
+                card.appendChild(cardHeader);
+                card.appendChild(details);
+                container.appendChild(card);
+            });
+
+            renderScopePills();
+        }
+
         function initWebSocket() {
             if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
                 return;
@@ -1278,6 +1637,7 @@
                 socketLed.style.boxShadow = '0 0 10px var(--led-green-glow)';
                 socketStatus.textContent = '[ ENLAZADO ]';
                 ws.send(JSON.stringify({ type: 'get_devices' }));
+                ws.send(JSON.stringify({ type: 'get_sessions' }));
             };
 
             ws.onclose = () => {
@@ -1307,6 +1667,8 @@
                         updateLearnButtonUI(payload.active);
                     } else if (payload.type === 'device_inventory') {
                         updateDeviceDropdowns(payload);
+                    } else if (payload.type === 'sessions_list') {
+                        updateSessionsUI(payload.sessions);
                     } else if (payload.type === 'bypass_status') {
                         updateBypassUI(payload.enabled);
                     }
@@ -1315,6 +1677,12 @@
                 }
             };
         }
+
+        // Consulta inmediata vía HTTP REST para poblar los selects sin esperar el handshake WS
+        fetch('/api/devices')
+            .then(res => res.json())
+            .then(data => updateDeviceDropdowns(data))
+            .catch(() => {});
 
         initWebSocket();
 
@@ -1380,12 +1748,19 @@
             const tr = document.createElement('tr');
             tr.className = 'row-flash';
 
+            const targetName = data.midiStatus?.name || (data.clientId ? data.clientId : 'Local');
+            tr.setAttribute('data-device', targetName);
+
+            // Respetar filtro activo
+            if (activeMidiScope !== 'all' && !targetName.includes(activeMidiScope)) {
+                tr.style.display = 'none';
+            }
+
             const timeStr = new Date(data.timestamp || Date.now()).toISOString().split('T')[1].replace('Z', '');
             const direction = data.dir || 'out';
             const msgDesc = data.description || (data.event.toUpperCase() + (data.note !== undefined ? ' ' + data.note : ''));
             const valDisplay = String(data.velocity !== undefined ? data.velocity : '-');
             const hexDisplay = data.hex || (data.event === 'noteon' ? '9' + (data.channel-1).toString(16) + ' ' + (data.note).toString(16) : '-');
-            const targetName = data.midiStatus?.name || 'Local';
 
             const tdTime = document.createElement('td');
             tdTime.style.color = 'var(--text-muted)';
@@ -1726,6 +2101,52 @@
         selectMappingRule(5);
 
         // --- 5. ACCIONES & TECLADO ---
+        const btnToggleNewSession = document.getElementById('btn-toggle-new-session');
+        const newSessionForm = document.getElementById('new-session-form');
+        const btnCancelSession = document.getElementById('btn-cancel-session');
+        const btnSaveSession = document.getElementById('btn-save-session');
+
+        if (btnToggleNewSession && newSessionForm) {
+            btnToggleNewSession.addEventListener('click', () => {
+                const isHidden = newSessionForm.style.display === 'none';
+                newSessionForm.style.display = isHidden ? 'flex' : 'none';
+            });
+        }
+
+        if (btnCancelSession && newSessionForm) {
+            btnCancelSession.addEventListener('click', () => {
+                newSessionForm.style.display = 'none';
+            });
+        }
+
+        if (btnSaveSession && newSessionForm) {
+            btnSaveSession.addEventListener('click', () => {
+                const label = document.getElementById('input-session-label').value.trim();
+                const clientId = document.getElementById('input-session-id').value.trim();
+                const midiChannel = parseInt(document.getElementById('select-session-channel').value, 10);
+                const oscPort = parseInt(document.getElementById('input-session-port').value, 10);
+                const oscPrefix = document.getElementById('input-session-prefix').value.trim();
+
+                if (!clientId) {
+                    alert('Por favor especifica un ID único para el proyecto.');
+                    return;
+                }
+
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'register_client',
+                        clientId,
+                        label,
+                        midiChannel,
+                        oscPort,
+                        oscPrefix
+                    }));
+                }
+
+                newSessionForm.style.display = 'none';
+            });
+        }
+
         document.getElementById('btn-panic').addEventListener('click', () => {
             if (ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'midi', event: 'panic' }));

@@ -156,6 +156,7 @@ class MidiRouter {
                         note: data1,
                         velocity: data2,
                         hex: hexBytes,
+                        rawBytes: Array.from(msg),
                         source: this.activeInputName,
                         timestamp: Date.now()
                     };
@@ -247,6 +248,68 @@ class MidiRouter {
             channel: ch + 1, // Exponer a usuario 1-16
             note: n,
             velocity: 0,
+            timestamp: Date.now()
+        };
+    }
+
+    sendCC(channel, control, value) {
+        if (!this.activeOutput) throw new Error('No hay puerto MIDI OUT abierto.');
+
+        const ch = Math.max(0, Math.min(15, parseInt(channel, 10)));
+        const ctrl = Math.max(0, Math.min(127, parseInt(control, 10)));
+        const val = Math.max(0, Math.min(127, parseInt(value, 10)));
+
+        this.activeOutput.control(ch, ctrl, val);
+
+        return {
+            event: 'cc',
+            channel: ch + 1,
+            note: ctrl,
+            velocity: val,
+            timestamp: Date.now()
+        };
+    }
+
+    sendProgramChange(channel, program) {
+        if (!this.activeOutput) throw new Error('No hay puerto MIDI OUT abierto.');
+
+        const ch = Math.max(0, Math.min(15, parseInt(channel, 10)));
+        const prg = Math.max(0, Math.min(127, parseInt(program, 10)));
+
+        this.activeOutput.program(ch, prg);
+
+        return {
+            event: 'program_change',
+            channel: ch + 1,
+            note: prg,
+            velocity: 0,
+            timestamp: Date.now()
+        };
+    }
+
+    sendPitchBend(channel, value) {
+        if (!this.activeOutput) throw new Error('No hay puerto MIDI OUT abierto.');
+
+        const ch = Math.max(0, Math.min(15, parseInt(channel, 10)));
+        const pb = Math.max(0, Math.min(16383, parseInt(value, 10)));
+
+        this.activeOutput.pitchBend(ch, pb);
+
+        return {
+            event: 'pitchbend',
+            channel: ch + 1,
+            note: pb,
+            velocity: 0,
+            timestamp: Date.now()
+        };
+    }
+
+    sendRaw(msgBytes) {
+        if (!this.activeOutput) throw new Error('No hay puerto MIDI OUT abierto.');
+        this.activeOutput.send(msgBytes);
+        return {
+            event: 'raw',
+            bytes: msgBytes,
             timestamp: Date.now()
         };
     }

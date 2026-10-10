@@ -10,7 +10,7 @@ async function main() {
     console.log('================================================================\n');
 
     const app = new LiveSentinelApp();
-    const info = await app.start();
+    const info = await app.start(null, 57120, 'USB2.0-MIDI');
 
     console.log('\n>> ESTACIÓN ACTIVA Y LISTA PARA CONCIERTO EN VIVO:');
     console.log(`   - Dashboard de Monitoreo: http://${info.localIP}:${info.httpPort}`);

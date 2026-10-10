@@ -7,7 +7,7 @@ const path = require('path');
 const os = require('os');
 const WebSocket = require('ws');
 const StreamProcessor = require('./processor');
-const TerminalMonitor = require('./monitor');
+const TerminalMonitor = require('./midiosc_monitor');
 
 const HTTP_PORT = 3000;
 const WS_PORT = 8081;
@@ -30,6 +30,7 @@ class LiveSentinelApp {
     constructor() {
         this.processor = new StreamProcessor();
         this.terminalMonitor = new TerminalMonitor();
+        this.terminalMonitor.setSessionRegistry(this.processor.sessionRegistry);
         this.httpServer = null;
         this.wss = null;
         this.webClients = new Set();
@@ -66,7 +67,19 @@ class LiveSentinelApp {
         }
     }
 
-    async start(targetMidi = null, targetOscPort = 57120) {
+    broadcastSessionsList() {
+        const payload = JSON.stringify({
+            type: 'sessions_list',
+            sessions: this.processor.sessionRegistry.listSessions()
+        });
+        for (const ws of this.webClients) {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(payload);
+            }
+        }
+    }
+
+    async start(targetMidi = null, targetOscPort = 57120, targetMidiIn = null) {
         await this.processor.init();
         await this.processor.enableVirtualProxy();
         this.processor.addOscTarget('127.0.0.1', targetOscPort);
@@ -83,6 +96,15 @@ class LiveSentinelApp {
                 await this.processor.midiRouter.openOutput(portToOpen);
             } catch (err) {
                 console.warn(`[MIDI] No se pudo abrir salida por defecto "${portToOpen}": ${err.message}. Podrás seleccionarla manualmente desde la consola.`);
+            }
+        }
+
+        // Si se especifica targetMidiIn o en producción se auto-conecta si se pide
+        if (targetMidiIn) {
+            try {
+                await this.processor.midiRouter.openInput(targetMidiIn);
+            } catch (err) {
+                console.warn(`[MIDI] No se pudo abrir entrada "${targetMidiIn}": ${err.message}.`);
             }
         }
 
@@ -104,18 +126,40 @@ class LiveSentinelApp {
 
         // 1. Servidor HTTP
         this.httpServer = http.createServer((req, res) => {
+            const urlPath = req.url.split('?')[0];
+
+            // Endpoint REST de inventario inmediato de dispositivos
+            if (urlPath === '/api/devices') {
+                const outputs = this.processor.midiRouter.listOutputs();
+                const inputs = this.processor.midiRouter.listInputs();
+                const payload = JSON.stringify({
+                    type: 'device_inventory',
+                    outputs,
+                    inputs,
+                    activeOutput: this.processor.midiRouter.activeOutputName,
+                    activeInput: this.processor.midiRouter.activeInputName
+                });
+                res.writeHead(200, {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                });
+                return res.end(payload);
+            }
+
             // Protección contra Path Traversal: Sanitizar ruta y restringir a archivos públicos permitidos
             const safePath = path.normalize(req.url.split('?')[0]).replace(/^(\.\.[\/\\])+/, '');
-            let fileName = safePath === '/' || safePath === '\\' ? 'midi_monitor.html' : safePath.replace(/^[\/\\]+/, '');
+            let fileName = safePath === '/' || safePath === '\\' ? 'midiosc_monitor.html' : safePath.replace(/^[\/\\]+/, '');
             
-            // Lista blanca de archivos públicos permitidos
-            const allowedFiles = ['midi_monitor.html', 'midi_shortcut_studio.html', 'favicon.ico'];
+            // Lista blanca de archivos públicos permitidos (con soporte retrocompatible para midi_monitor.html)
+            const allowedFiles = ['midiosc_monitor.html', 'midi_monitor.html', 'midi_shortcut_studio.html', 'favicon.ico'];
             if (!allowedFiles.includes(fileName)) {
                 res.writeHead(403, { 'Content-Type': 'text/plain' });
                 return res.end('Acceso denegado: solo archivos públicos autorizados.');
             }
 
-            const filePath = path.join(__dirname, '..', fileName);
+            // Si piden midi_monitor.html, redirigir internamente a midiosc_monitor.html
+            const actualFileName = fileName === 'midi_monitor.html' ? 'midiosc_monitor.html' : fileName;
+            const filePath = path.join(__dirname, '..', actualFileName);
             const extname = String(path.extname(filePath)).toLowerCase();
             const mimeTypes = {
                 '.html': 'text/html',
@@ -201,6 +245,44 @@ class LiveSentinelApp {
                         return;
                     }
 
+                    if (msg.type === 'register_client') {
+                        try {
+                            const result = this.processor.sessionRegistry.registerClient(msg.clientId, {
+                                label: msg.label,
+                                midiChannel: msg.midiChannel,
+                                oscPort: msg.oscPort,
+                                oscHost: msg.oscHost,
+                                oscPrefix: msg.oscPrefix
+                            });
+                            ws.send(JSON.stringify({
+                                type: 'client_registered',
+                                session: result.session,
+                                conflicts: result.conflicts
+                            }));
+                            this.broadcastSessionsList();
+                        } catch (err) {
+                            ws.send(JSON.stringify({ type: 'error', message: err.message }));
+                        }
+                        return;
+                    }
+
+                    if (msg.type === 'unregister_client') {
+                        if (msg.clientId) {
+                            this.processor.panicClient(msg.clientId);
+                            this.processor.sessionRegistry.unregisterClient(msg.clientId);
+                            this.broadcastSessionsList();
+                        }
+                        return;
+                    }
+
+                    if (msg.type === 'get_sessions') {
+                        ws.send(JSON.stringify({
+                            type: 'sessions_list',
+                            sessions: this.processor.sessionRegistry.listSessions()
+                        }));
+                        return;
+                    }
+
                     if (msg.type === 'set_bypass') {
                         this.setBypass(!!msg.enabled);
                         return;
@@ -250,10 +332,18 @@ class LiveSentinelApp {
                         } else if (msg.event === 'noteoff') {
                             this.processor.dispatchNoteOff(ch, rawNote, msg);
                         } else if (msg.event === 'panic') {
-                            this.processor.panic();
+                            if (msg.clientId) {
+                                this.processor.panicClient(msg.clientId);
+                            } else {
+                                this.processor.panic();
+                            }
                         }
                     } else if (msg.type === 'panic') {
-                        this.processor.panic();
+                        if (msg.clientId) {
+                            this.processor.panicClient(msg.clientId);
+                        } else {
+                            this.processor.panic();
+                        }
                     } else if (msg.type === 'osc') {
                         // Enrutamiento seguro y encapsulado de paquetes OSC crudos
                         if (msg.message) {

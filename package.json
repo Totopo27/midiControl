@@ -1,13 +1,14 @@
 {
-  "name": "midicontrol",
+  "name": "midiosccontrol",
   "version": "1.0.0",
-  "description": "Low-latency MIDI and OSC bridge for live music performance",
+  "description": "Low-latency MIDI and OSC multi-client bridge for live music performance",
   "main": "src/app.js",
   "scripts": {
     "start": "node start.js",
     "bridge": "node bridge.js",
     "start:bridge": "node bridge.js",
-    "test": "node test_fase1.js && node test_fase2.js && node test_fase3.js && node test_fase4.js && node test_fase5_bypass.js && node test_fase6_routing.js && node test_fase7_shift.js && node test_fase8_virtual_proxy.js && node test_integration_e2e.js && node test_bridge.js && node test_audit_phase1.js && node test_audit_phase2.js && node test_audit_phase3.js && node test_audit_phase4.js && node test_audit_phase5.js",
+    "test": "node test_fase1.js && node test_fase2.js && node test_fase3.js && node test_fase4.js && node test_fase5_bypass.js && node test_fase6_routing.js && node test_fase7_shift.js && node test_fase8_virtual_proxy.js && node test_multiclient_session.js && node test_multiproject_e2e.js && node test_integration_e2e.js && node test_bridge.js && node test_audit_phase1.js && node test_audit_phase2.js && node test_audit_phase3.js && node test_audit_phase4.js && node test_audit_phase5.js",
+    "test:multiclient": "node test_multiclient_session.js && node test_multiproject_e2e.js",
     "test:bridge": "node test_bridge.js",
     "test:audit": "node test_audit_phase1.js && node test_audit_phase2.js && node test_audit_phase3.js && node test_audit_phase4.js && node test_audit_phase5.js",
     "test:e2e": "node test_integration_e2e.js",

@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "midi-control",
+  "productName": "midiosc-control",
   "version": "1.0.0",
-  "identifier": "com.totopo.midicontrol",
+  "identifier": "com.totopo.midiosccontrol",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3000"

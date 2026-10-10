@@ -6,6 +6,7 @@ const dgram = require('dgram');
 const MidiRouter = require('./router');
 const ShiftEngine = require('./shift_engine');
 const VirtualMidiProxy = require('./virtual_proxy');
+const SessionRegistry = require('./session_manager');
 const { encodeOSCMessage } = require('./osc');
 
 class StreamProcessor {
@@ -13,6 +14,7 @@ class StreamProcessor {
         this.midiRouter = new MidiRouter();
         this.shiftEngine = new ShiftEngine();
         this.virtualProxy = new VirtualMidiProxy();
+        this.sessionRegistry = new SessionRegistry();
         this.udpClient = dgram.createSocket('udp4');
         this.oscTargets = []; // [{ host, port, pathPrefix }]
         this.listeners = [];  // Callbacks para observadores (monitor / UI)
@@ -100,6 +102,44 @@ class StreamProcessor {
         };
         this.notify(telemetry);
 
+        // Thru / Reenvío automático a la salida física activa (MIDI THRU / BRIDGE COMPLETO)
+        if (this.midiRouter.activeOutput && this.midiRouter.isRouteAllowed('hardware', 'hardware')) {
+            try {
+                let outResult = null;
+                const ch0 = (msg.channel || 1) - 1;
+                if (msg.event === 'noteon') {
+                    outResult = this.midiRouter.sendNoteOn(ch0, msg.note, msg.velocity);
+                } else if (msg.event === 'noteoff') {
+                    outResult = this.midiRouter.sendNoteOff(ch0, msg.note);
+                } else if (msg.event === 'cc') {
+                    outResult = this.midiRouter.sendCC(ch0, msg.note, msg.velocity);
+                } else if (msg.event === 'program_change') {
+                    outResult = this.midiRouter.sendProgramChange(ch0, msg.note);
+                } else if (msg.event === 'pitchbend') {
+                    outResult = this.midiRouter.sendPitchBend(ch0, msg.note);
+                } else if (msg.rawBytes) {
+                    outResult = this.midiRouter.sendRaw(msg.rawBytes);
+                }
+
+                if (outResult) {
+                    this.notify({
+                        protocol: 'midi',
+                        type: 'dispatch',
+                        dir: 'out',
+                        event: msg.event,
+                        channel: msg.channel,
+                        note: msg.note,
+                        velocity: msg.velocity,
+                        description: `THRU ${msg.description}`,
+                        hex: msg.hex,
+                        durationUs: 0.1,
+                        timestamp: Date.now(),
+                        midiStatus: { name: this.midiRouter.activeOutputName }
+                    });
+                }
+            } catch (_) {}
+        }
+
         // Si es NoteOn/NoteOff del pedal, reenviarlo a OSC si OSC está activo
         if (msg.event === 'noteon' || msg.event === 'noteoff') {
             const velFloat = msg.event === 'noteon' ? parseFloat(msg.velocity) : 0.0;
@@ -152,13 +192,23 @@ class StreamProcessor {
 
     dispatchNoteOn(channel, note, velocity = 127, extraPayload = {}) {
         const startTime = process.hrtime.bigint();
-        const sourceRoute = extraPayload.source_route || extraPayload.appId || 'app_a';
+        const clientId = extraPayload.clientId || null;
+        let effectiveChannel = channel;
+        let sourceRoute = extraPayload.source_route || extraPayload.appId || 'app_a';
+
+        // Si el cliente está registrado en SessionRegistry, aplicar su canal forzado
+        if (clientId && this.sessionRegistry.hasClient(clientId)) {
+            const session = this.sessionRegistry.getClient(clientId);
+            effectiveChannel = session.zeroIndexedChannel;
+            this.sessionRegistry.recordNoteOn(clientId, note);
+            sourceRoute = clientId;
+        }
 
         // 1. Rama A: Envío Físico MIDI (Aislamiento de Retorno / Prevención de bucles)
         let midiResult = null;
         if (this.midiRouter.isRouteAllowed(sourceRoute, 'hardware')) {
             try {
-                midiResult = this.midiRouter.sendNoteOn(channel, note, velocity);
+                midiResult = this.midiRouter.sendNoteOn(effectiveChannel, note, velocity);
             } catch (e) {
                 midiResult = { error: e.message };
             }
@@ -172,12 +222,21 @@ class StreamProcessor {
         const velFloat = parseFloat(velocity);
 
         if (this.midiRouter.isRouteAllowed(sourceRoute, 'osc')) {
-            const oscBuffer = encodeOSCMessage('/mnote', 'ff', [noteFloat, velFloat]);
-            for (let i = 0; i < this.oscTargets.length; i++) {
-                const target = this.oscTargets[i];
-                this.udpClient.send(oscBuffer, 0, oscBuffer.length, target.port, target.host);
+            // Si el cliente tiene puerto y prefijo específico configurado
+            const session = clientId ? this.sessionRegistry.getClient(clientId) : null;
+            if (session) {
+                const oscPath = (session.oscPrefix || '') + '/mnote';
+                const oscBuffer = encodeOSCMessage(oscPath.startsWith('/') ? oscPath : '/' + oscPath, 'ff', [noteFloat, velFloat]);
+                this.udpClient.send(oscBuffer, 0, oscBuffer.length, session.oscPort, session.oscHost);
+                oscDelivered = true;
+            } else {
+                const oscBuffer = encodeOSCMessage('/mnote', 'ff', [noteFloat, velFloat]);
+                for (let i = 0; i < this.oscTargets.length; i++) {
+                    const target = this.oscTargets[i];
+                    this.udpClient.send(oscBuffer, 0, oscBuffer.length, target.port, target.host);
+                }
+                oscDelivered = true;
             }
-            oscDelivered = true;
         }
 
         const endTime = process.hrtime.bigint();
@@ -185,13 +244,19 @@ class StreamProcessor {
 
         // Notificar telemetría OSC dedicada si fue entregado
         if (oscDelivered) {
+            const session = clientId ? this.sessionRegistry.getClient(clientId) : null;
+            const targetHost = session ? session.oscHost : (this.oscTargets[0]?.host || '127.0.0.1');
+            const targetPort = session ? session.oscPort : (this.oscTargets[0]?.port || 57120);
+            const pathUsed = session && session.oscPrefix ? `${session.oscPrefix}/mnote` : '/mnote';
+
             this.notify({
                 protocol: 'osc',
                 dir: 'out',
-                path: '/mnote',
+                clientId,
+                path: pathUsed,
                 types: ',ff',
                 args: `[${noteFloat.toFixed(2)}, ${velFloat.toFixed(1)}]`,
-                target: `${this.oscTargets[0]?.host || '127.0.0.1'}:${this.oscTargets[0]?.port || 57120}`,
+                target: `${targetHost}:${targetPort}`,
                 durationUs,
                 timestamp: Date.now()
             });
@@ -201,12 +266,13 @@ class StreamProcessor {
             protocol: 'midi',
             type: 'dispatch',
             dir: 'out',
+            clientId,
             event: 'noteon',
-            channel: channel + 1,
+            channel: effectiveChannel + 1,
             note,
             velocity,
-            description: `NOTEON ${note}`,
-            hex: `9${(channel).toString(16).toUpperCase()} ${note.toString(16).toUpperCase()} ${velocity.toString(16).toUpperCase()}`,
+            description: `NOTEON ${note} (Ch ${effectiveChannel + 1})`,
+            hex: `9${(effectiveChannel).toString(16).toUpperCase()} ${note.toString(16).toUpperCase()} ${velocity.toString(16).toUpperCase()}`,
             noteFloat,
             durationUs,
             timestamp: Date.now(),
@@ -219,13 +285,22 @@ class StreamProcessor {
 
     dispatchNoteOff(channel, note, extraPayload = {}) {
         const startTime = process.hrtime.bigint();
-        const sourceRoute = extraPayload.source_route || extraPayload.appId || 'app_a';
+        const clientId = extraPayload.clientId || null;
+        let effectiveChannel = channel;
+        let sourceRoute = extraPayload.source_route || extraPayload.appId || 'app_a';
+
+        if (clientId && this.sessionRegistry.hasClient(clientId)) {
+            const session = this.sessionRegistry.getClient(clientId);
+            effectiveChannel = session.zeroIndexedChannel;
+            this.sessionRegistry.recordNoteOff(clientId, note);
+            sourceRoute = clientId;
+        }
 
         // 1. Rama A: Envío Físico MIDI (Aislamiento de Retorno)
         let midiResult = null;
         if (this.midiRouter.isRouteAllowed(sourceRoute, 'hardware')) {
             try {
-                midiResult = this.midiRouter.sendNoteOff(channel, note);
+                midiResult = this.midiRouter.sendNoteOff(effectiveChannel, note);
             } catch (e) {
                 midiResult = { error: e.message };
             }
@@ -238,12 +313,20 @@ class StreamProcessor {
         const noteFloat = extraPayload.noteFloat !== undefined ? extraPayload.noteFloat : parseFloat(note);
 
         if (this.midiRouter.isRouteAllowed(sourceRoute, 'osc')) {
-            const oscBuffer = encodeOSCMessage('/mnote', 'ff', [noteFloat, 0.0]);
-            for (let i = 0; i < this.oscTargets.length; i++) {
-                const target = this.oscTargets[i];
-                this.udpClient.send(oscBuffer, 0, oscBuffer.length, target.port, target.host);
+            const session = clientId ? this.sessionRegistry.getClient(clientId) : null;
+            if (session) {
+                const oscPath = (session.oscPrefix || '') + '/mnote';
+                const oscBuffer = encodeOSCMessage(oscPath.startsWith('/') ? oscPath : '/' + oscPath, 'ff', [noteFloat, 0.0]);
+                this.udpClient.send(oscBuffer, 0, oscBuffer.length, session.oscPort, session.oscHost);
+                oscDelivered = true;
+            } else {
+                const oscBuffer = encodeOSCMessage('/mnote', 'ff', [noteFloat, 0.0]);
+                for (let i = 0; i < this.oscTargets.length; i++) {
+                    const target = this.oscTargets[i];
+                    this.udpClient.send(oscBuffer, 0, oscBuffer.length, target.port, target.host);
+                }
+                oscDelivered = true;
             }
-            oscDelivered = true;
         }
 
         const endTime = process.hrtime.bigint();
@@ -251,13 +334,19 @@ class StreamProcessor {
 
         // Notificar telemetría OSC dedicada
         if (oscDelivered) {
+            const session = clientId ? this.sessionRegistry.getClient(clientId) : null;
+            const targetHost = session ? session.oscHost : (this.oscTargets[0]?.host || '127.0.0.1');
+            const targetPort = session ? session.oscPort : (this.oscTargets[0]?.port || 57120);
+            const pathUsed = session && session.oscPrefix ? `${session.oscPrefix}/mnote` : '/mnote';
+
             this.notify({
                 protocol: 'osc',
                 dir: 'out',
-                path: '/mnote',
+                clientId,
+                path: pathUsed,
                 types: ',ff',
                 args: `[${noteFloat.toFixed(2)}, 0.0]`,
-                target: `${this.oscTargets[0]?.host || '127.0.0.1'}:${this.oscTargets[0]?.port || 57120}`,
+                target: `${targetHost}:${targetPort}`,
                 durationUs,
                 timestamp: Date.now()
             });
@@ -267,12 +356,13 @@ class StreamProcessor {
             protocol: 'midi',
             type: 'dispatch',
             dir: 'out',
+            clientId,
             event: 'noteoff',
-            channel: channel + 1,
+            channel: effectiveChannel + 1,
             note,
             velocity: 0,
-            description: `NOTEOFF ${note}`,
-            hex: `8${(channel).toString(16).toUpperCase()} ${note.toString(16).toUpperCase()} 00`,
+            description: `NOTEOFF ${note} (Ch ${effectiveChannel + 1})`,
+            hex: `8${(effectiveChannel).toString(16).toUpperCase()} ${note.toString(16).toUpperCase()} 00`,
             noteFloat,
             durationUs,
             timestamp: Date.now(),
@@ -281,6 +371,34 @@ class StreamProcessor {
 
         this.notify(telemetry);
         return telemetry;
+    }
+
+    panicClient(clientId) {
+        if (!clientId || !this.sessionRegistry.hasClient(clientId)) {
+            return { cleared: 0, notes: [] };
+        }
+        const session = this.sessionRegistry.getClient(clientId);
+        const channel = session.zeroIndexedChannel;
+        const notesToTurnOff = this.sessionRegistry.clearClientNotes(clientId);
+
+        for (const note of notesToTurnOff) {
+            try {
+                this.midiRouter.sendNoteOff(channel, note);
+            } catch (_) {}
+
+            // Notificar OSC apagado
+            try {
+                const oscPath = (session.oscPrefix || '') + '/mnote';
+                const oscBuffer = encodeOSCMessage(oscPath.startsWith('/') ? oscPath : '/' + oscPath, 'ff', [parseFloat(note), 0.0]);
+                this.udpClient.send(oscBuffer, 0, oscBuffer.length, session.oscPort, session.oscHost);
+            } catch (_) {}
+        }
+
+        return {
+            clientId,
+            cleared: notesToTurnOff.length,
+            notes: notesToTurnOff
+        };
     }
 
     async enableVirtualProxy(options = {}) {

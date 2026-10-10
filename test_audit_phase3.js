@@ -13,14 +13,14 @@ async function testFrontendAudit() {
     console.log('   TEST AUDITORÍA FASE 3: FRONTEND SECURITY, XSS & DOM SANITY   ');
     console.log('================================================================\n');
 
-    const monitorHtmlPath = path.join(__dirname, 'midi_monitor.html');
+    const monitorHtmlPath = path.join(__dirname, 'midiosc_monitor.html');
     const studioHtmlPath = path.join(__dirname, 'midi_shortcut_studio.html');
 
     const monitorHtml = fs.readFileSync(monitorHtmlPath, 'utf-8');
     const studioHtml = fs.readFileSync(studioHtmlPath, 'utf-8');
 
-    // --- TEST 1: Eliminación de innerHTML en handlers de telemetría en midi_monitor.html ---
-    console.log('[TEST 1] Inspeccionando midi_monitor.html para descartar innerHTML en telemetría...');
+    // --- TEST 1: Eliminación de innerHTML en handlers de telemetría en midiosc_monitor.html ---
+    console.log('[TEST 1] Inspeccionando midiosc_monitor.html para descartar innerHTML en telemetría...');
     
     // Las funciones handleTelemetry y handleOscTelemetry no deben usar innerHTML con interpolación
     const hasUnsafeTelemetryInnerHtml = /handleTelemetry[\s\S]*?tr\.innerHTML\s*=/m.test(monitorHtml) ||
